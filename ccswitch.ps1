@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   ccswitch — swap Claude Code auth profile (Windows / PowerShell port).
 
@@ -27,6 +27,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# Windows PowerShell 5.1: make sure TLS 1.2 is enabled for the health probes
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
 $Settings  = Join-Path $ClaudeDir "settings.json"
 $Profiles  = Join-Path $ClaudeDir "profiles"
@@ -62,12 +64,13 @@ function Test-Profile($name) {
   # api.anthropic.com answers /v1/models only with the anthropic-version header;
   # without it a healthy endpoint false-reports DOWN.
   if ($base -like "*api.anthropic.com*") { $headers["anthropic-version"] = "2023-06-01" }
+  # no -SkipHttpErrorCheck: that flag is PS7-only; catching the error works on 5.1 and 7
   try {
-    $resp = Invoke-WebRequest -Uri $url -Headers $headers -TimeoutSec 4 `
-              -UseBasicParsing -SkipHttpErrorCheck
-    return [string]$resp.StatusCode
+    $resp = Invoke-WebRequest -Uri $url -Headers $headers -TimeoutSec 4 -UseBasicParsing
+    return [string][int]$resp.StatusCode
   } catch {
-    if ($_.Exception.Response) { return [string][int]$_.Exception.Response.StatusCode }
+    $r = $_.Exception.Response
+    if ($r -and $r.StatusCode) { return [string][int]$r.StatusCode }
     return "000"
   }
 }
@@ -98,7 +101,8 @@ function Set-ProfileEnv($rawName) {
 
   Copy-Item $Settings "$Settings.bak" -Force
   $s = Get-Content $Settings -Raw | ConvertFrom-Json
-  $s.env = $profObj
+  # Add-Member: plain `$s.env = ...` throws when settings.json has no env block yet
+  $s | Add-Member -NotePropertyName env -NotePropertyValue $profObj -Force
   # depth 10 preserves nested hooks/permissions objects
   $s | ConvertTo-Json -Depth 10 | Set-Content $Settings -Encoding UTF8
 

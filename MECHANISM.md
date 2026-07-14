@@ -269,5 +269,6 @@ HOME="$T" CCSWITCH_NO_AUTO=1 bash "$T/.claude/hooks/check-router.sh"
 
 ## 11. Changelog
 
+- **2026-07-14 (Windows/PS 5.1 fix)** — `ccswitch.ps1` + `setup.ps1` lưu lại **UTF-8 có BOM**: không BOM thì Windows PowerShell 5.1 (mặc định của `powershell.exe` mà setup đăng ký) đọc file theo ANSI → byte tiếng Việt/emoji trùng smart-quote → **vỡ parse, tool chết ngay khi cài** (5 lỗi parse ở ccswitch.ps1, 12 ở setup.ps1). Probe bỏ `-SkipHttpErrorCheck` (tham số **PS7-only** — trên 5.1 mọi probe trả `000 DOWN`, làm `fallback` bỏ qua router đang sống) → dùng try/catch đọc status, chạy cả 5.1 lẫn 7. Gán block env bằng `Add-Member` (gán thẳng `$s.env = ...` throw khi settings.json chưa có key `env` — chính setup tạo settings mới là `{}`). Bật TLS 1.2 tường minh cho probe trên 5.1. Verify: parser-simulation ANSI vs BOM (0 lỗi) + sandbox 5.1 (`check` 200, switch trên settings rỗng, `fallback` chọn đúng router sống).
 - **2026-07-14** — Auto-switch: hook `check-router.sh` nâng từ warn-only → tự `ccswitch fallback` khi timeout/lỗi (tắt bằng `CCSWITCH_NO_AUTO=1`). Thêm lệnh `ccswitch clear`. Probe fix header `anthropic-version` cho `original`. Fix hiển thị health `000` (trước bị `000000`). Parity PowerShell (probe header + `clear`). Verify bằng sandbox test (§8).
 - **Init** — ccswitch CLI 9router/local/original + warn-only SessionStart hook + cross-platform setup.
