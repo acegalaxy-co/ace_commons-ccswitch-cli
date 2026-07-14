@@ -94,6 +94,19 @@ Mỗi lần `apply` tạo backup `settings.json.bak`. Health probe:
 
 Hook `hooks/check-router.sh` chạy ở sự kiện **SessionStart** (đã wire vào `settings.json` bởi `setup.sh`).
 
+**Banner (LUÔN in đầu session):** mỗi lần mở session hook in ngay: endpoint đang chạy (đọc `$ANTHROPIC_BASE_URL` env — endpoint session thực dùng — fallback settings.json), thứ tự fallback, và lệnh sơ lược. Ví dụ:
+
+```
+━━━ ccswitch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+▶ Endpoint đang chạy: 9router (remote router)  (https://9router.acegalaxy.co/v1)
+  Fallback (khi router chết): 9router → local → original
+    • original = safe-harbor: LUÔN về được (cần key sk-ant- thật để không lỗi)
+  Lệnh: ccswitch [check | 9router | local | original | fallback | clear]
+        đổi endpoint xong → RESTART Claude Code (env nạp lúc khởi động)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ health=200 OK
+```
+
 ### Flow
 
 ```
