@@ -70,11 +70,20 @@ ccswitch local          # → local :20128
 ccswitch original       # → Anthropic direct
 ccswitch check          # probe health tất cả profile
 ccswitch fallback       # tự chọn profile healthy đầu tiên: 9router → local → original
+ccswitch clear          # gỡ block env (về Anthropic-direct mặc định)
 ```
 
 Windows: cú pháp giống hệt (`ccswitch 9router`, ...).
 
 > ⚠️ **Sau mỗi lần switch phải RESTART Claude Code** (quit + mở lại) — env chỉ load lúc khởi động.
+
+### Auto-switch khi timeout/lỗi
+
+Hook `SessionStart` (`hooks/check-router.sh`) probe endpoint đang active mỗi lần mở session. Nếu nó **timeout hoặc lỗi** (health ≠ 200), hook **tự chạy `ccswitch fallback`** → ghi profile healthy đầu tiên vào `settings.json`.
+
+- **Giới hạn:** env nạp lúc process start, **trước** hook → switch heal cho lần mở **kế tiếp**; session hiện tại có thể còn endpoint cũ tới khi Reload Window / restart.
+- **Mid-session** (đang chat mà API lỗi) **không** auto-switch được (Claude Code không có hook on-error) — đó là việc của router upstream-failover.
+- **Tắt auto-switch** (chỉ cảnh báo như cũ): `export CCSWITCH_NO_AUTO=1`.
 
 Ví dụ output `ccswitch`:
 ```

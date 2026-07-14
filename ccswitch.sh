@@ -16,6 +16,7 @@
 #   ccswitch original     # straight to api.anthropic.com
 #   ccswitch check        # probe health of every profile
 #   ccswitch fallback     # pick first healthy profile in order 9router->local->original
+#   ccswitch clear        # remove the env block (revert to Anthropic-direct default)
 set -euo pipefail
 
 CLAUDE_DIR="$HOME/.claude"
@@ -40,15 +41,21 @@ canon() {
 probe() {
   local prof="$PROFILES/$1.json"
   [ -f "$prof" ] || { echo "000"; return; }
-  local base tok key auth
+  local base tok key auth vers
   base=$(jq -r '.ANTHROPIC_BASE_URL // "https://api.anthropic.com"' "$prof" 2>/dev/null)
   tok=$(jq -r '.ANTHROPIC_AUTH_TOKEN // empty' "$prof" 2>/dev/null || true)
   key=$(jq -r '.ANTHROPIC_API_KEY // empty' "$prof" 2>/dev/null || true)
   auth="${tok:-$key}"
-  curl -s -m 4 "${base%/}/models" \
+  # api.anthropic.com answers /v1/models only with the anthropic-version header;
+  # without it a healthy endpoint false-reports DOWN.
+  vers=""; case "$base" in *api.anthropic.com*) vers=1 ;; esac
+  local code
+  code=$(curl -s -m 4 "${base%/}/models" \
     ${auth:+-H "Authorization: Bearer $auth"} \
     ${key:+-H "x-api-key: $key"} \
-    -o /dev/null -w "%{http_code}" 2>/dev/null || echo "000"
+    ${vers:+-H "anthropic-version: 2023-06-01"} \
+    -o /dev/null -w "%{http_code}" 2>/dev/null)
+  [ -n "$code" ] && echo "$code" || echo "000"
 }
 
 current() {
@@ -90,6 +97,14 @@ case "${1:-status}" in
       echo "  $p down ($c), trying next…"
     done
     die "all profiles down — no healthy endpoint" ;;
+  clear)
+    [ -f "$SETTINGS" ] || die "settings not found: $SETTINGS"
+    cp "$SETTINGS" "$SETTINGS.bak"
+    jq 'del(.env)' "$SETTINGS.bak" > "$SETTINGS.tmp" \
+      || die "jq del failed (settings unchanged, see $SETTINGS.bak)"
+    mv "$SETTINGS.tmp" "$SETTINGS"
+    echo "✅ removed env block (backup: $SETTINGS.bak) — reverts to Anthropic-direct default."
+    echo "↻ restart Claude Code (quit + reopen) to load new env." ;;
   status|"")
     current
     for p in "${ORDER[@]}"; do
@@ -97,5 +112,5 @@ case "${1:-status}" in
     done
     echo "profiles: $(ls "$PROFILES" 2>/dev/null | sed 's/\.json//' | tr '\n' ' ')" ;;
   *)
-    die "usage: ccswitch [9router|local|original|check|fallback|status]" ;;
+    die "usage: ccswitch [9router|local|original|check|fallback|clear|status]" ;;
 esac

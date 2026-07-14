@@ -45,7 +45,7 @@ if ! jq -e --arg c "$HOOK_CMD" \
     .hooks.SessionStart //= [] |
     .hooks.SessionStart += [ { "hooks": [ { "type": "command", "command": $c } ] } ]
   ' "$SETTINGS.bak" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
-  echo "  ✓ wired SessionStart health hook into settings.json"
+  echo "  ✓ wired SessionStart auto-switch hook into settings.json (disable: export CCSWITCH_NO_AUTO=1)"
 else
   echo "  • SessionStart hook already wired — skipped"
 fi

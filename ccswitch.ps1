@@ -59,6 +59,9 @@ function Test-Profile($name) {
     $headers["Authorization"] = "Bearer $auth"
     if ($p.ANTHROPIC_API_KEY) { $headers["x-api-key"] = $p.ANTHROPIC_API_KEY }
   }
+  # api.anthropic.com answers /v1/models only with the anthropic-version header;
+  # without it a healthy endpoint false-reports DOWN.
+  if ($base -like "*api.anthropic.com*") { $headers["anthropic-version"] = "2023-06-01" }
   try {
     $resp = Invoke-WebRequest -Uri $url -Headers $headers -TimeoutSec 4 `
               -UseBasicParsing -SkipHttpErrorCheck
@@ -122,11 +125,20 @@ switch ($Command) {
     }
     Die "all profiles down — no healthy endpoint"
   }
+  "clear" {
+    if (-not (Test-Path $Settings)) { Die "settings not found: $Settings" }
+    Copy-Item $Settings "$Settings.bak" -Force
+    $s = Get-Content $Settings -Raw | ConvertFrom-Json
+    if ($s.PSObject.Properties.Name -contains "env") { $s.PSObject.Properties.Remove("env") }
+    $s | ConvertTo-Json -Depth 10 | Set-Content $Settings -Encoding UTF8
+    Write-Host "✅ removed env block (backup: $Settings.bak) — reverts to Anthropic-direct default." -ForegroundColor Green
+    Write-Host "↻ restart Claude Code (quit + reopen) to load new env."
+  }
   { $_ -in @("status", "") } {
     Show-Current
     Show-Health
     $names = (Get-ChildItem $Profiles -Filter *.json | ForEach-Object { $_.BaseName }) -join " "
     Write-Host "profiles: $names"
   }
-  default { Die "usage: ccswitch [9router|local|original|check|fallback|status]" }
+  default { Die "usage: ccswitch [9router|local|original|check|fallback|clear|status]" }
 }
