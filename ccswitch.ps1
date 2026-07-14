@@ -118,12 +118,19 @@ switch ($Command) {
   }
   "check" { Show-Health }
   "fallback" {
-    foreach ($p in $Order) {
+    # Prefer first healthy router; `original` (Anthropic-direct) is the guaranteed
+    # SAFE-HARBOR terminal: apply even if its probe ≠ 200, so Claude never stays
+    # stuck on a dead router. Probe is advisory (can false-negative).
+    foreach ($p in @("9router", "local")) {
       $c = Test-Profile $p
       if ($c -eq "200") { Write-Host "→ first healthy: $p"; Set-ProfileEnv $p; exit 0 }
       Write-Host "  $p down ($c), trying next…"
     }
-    Die "all profiles down — no healthy endpoint"
+    $oc = Test-Profile "original"
+    if ($oc -eq "200") { Write-Host "→ safe-harbor: original ($oc)" }
+    elseif ($oc -match '^4') { Write-Host "⚠️  original probe=$oc (key sai/placeholder) — vẫn switch, NHƯNG Claude sẽ lỗi tới khi điền ANTHROPIC_API_KEY thật vào profiles/original.json" -ForegroundColor Yellow }
+    else { Write-Host "⚠️  original probe=$oc — forcing anyway (safe harbor; probe có thể false-negative)" -ForegroundColor Yellow }
+    Set-ProfileEnv "original"
   }
   "clear" {
     if (-not (Test-Path $Settings)) { Die "settings not found: $Settings" }

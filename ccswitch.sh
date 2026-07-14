@@ -91,12 +91,22 @@ case "${1:-status}" in
       c=$(probe "$p"); echo "  $p: $c $([ "$c" = 200 ] && echo OK || echo DOWN)"
     done ;;
   fallback)
-    for p in "${ORDER[@]}"; do
+    # Prefer first healthy router (9router → local). `original` (Anthropic-direct)
+    # is the guaranteed SAFE-HARBOR terminal: apply it even if its probe is not 200,
+    # so Claude never stays stuck on a dead router. Probe here is advisory only —
+    # /models can false-negative (IPv6 route, transient) while /messages still works.
+    for p in 9router local; do
       c=$(probe "$p")
       if [ "$c" = "200" ]; then echo "→ first healthy: $p"; apply "$p"; exit 0; fi
       echo "  $p down ($c), trying next…"
     done
-    die "all profiles down — no healthy endpoint" ;;
+    oc=$(probe original)
+    case "$oc" in
+      200) echo "→ safe-harbor: original ($oc)" ;;
+      4*)  echo "⚠️  original probe=$oc (key sai/placeholder) — vẫn switch, NHƯNG Claude sẽ lỗi tới khi điền ANTHROPIC_API_KEY thật vào profiles/original.json" ;;
+      *)   echo "⚠️  original probe=$oc — forcing anyway (safe harbor; probe có thể false-negative)" ;;
+    esac
+    apply original ;;
   clear)
     [ -f "$SETTINGS" ] || die "settings not found: $SETTINGS"
     cp "$SETTINGS" "$SETTINGS.bak"

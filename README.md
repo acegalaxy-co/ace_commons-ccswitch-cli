@@ -69,7 +69,7 @@ ccswitch 9router        # → remote (default)
 ccswitch local          # → local :20128
 ccswitch original       # → Anthropic direct
 ccswitch check          # probe health tất cả profile
-ccswitch fallback       # tự chọn profile healthy đầu tiên: 9router → local → original
+ccswitch fallback       # 9router→local nếu healthy; cả 2 chết → FORCE về original (safe-harbor)
 ccswitch clear          # gỡ block env (về Anthropic-direct mặc định)
 ```
 

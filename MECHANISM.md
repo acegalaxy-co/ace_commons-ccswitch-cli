@@ -114,10 +114,13 @@ probe {base}/models  (curl -m 4)
    │     → chỉ CẢNH BÁO (warn-only, hành vi cũ) → exit 0
    │
    ▼ (auto-switch enabled)
-   chạy `ccswitch fallback`  (9router → local → original)
+   chạy `ccswitch fallback`
    │
-   ├─ tìm được profile healthy → ghi vào settings.json + nhắc restart/Reload Window
-   └─ tất cả down → in ❌ "all profiles down", settings GIỮ NGUYÊN
+   ├─ 9router healthy? → apply, xong
+   ├─ local healthy?   → apply, xong
+   └─ cả 2 router chết → FORCE apply `original` (safe-harbor, KHÔNG cần probe 200)
+        → Claude luôn đáp về Anthropic-direct, không bao giờ kẹt trên router chết
+        → nếu original probe 401/403 (key sai) vẫn switch NHƯNG cảnh báo phải điền key thật
 ```
 
 ### Giới hạn (đọc kỹ — tránh hiểu nhầm)
@@ -134,16 +137,23 @@ export CCSWITCH_NO_AUTO=1
 
 ---
 
-## 6. Fallback chain & phao cứu sinh cuối
+## 6. Fallback chain & safe-harbor (KHÔNG để Claude chết)
 
-Thứ tự: **9router → local → original**. `ccswitch fallback` (và auto-switch hook) lặp theo thứ tự này, chọn cái **healthy đầu tiên**.
+Thứ tự: **9router → local → original**.
 
-- ✅ Cơ chế chain đã test (xem §8): fallback lặp qua các endpoint chết và **switch sang endpoint healthy cuối cùng trong danh sách**; nếu tất cả chết thì báo lỗi sạch, không sửa settings.
-- ⚠️ **`original.json` ship kèm placeholder key** (`<your-anthropic-api-key>`). Vì vậy trên máy chưa cấu hình, phao cuối cùng (`original`) sẽ **DOWN (404)** và fallback dừng ở `local`. Muốn `original` là phao thật:
-  ```bash
-  $EDITOR ~/.claude/profiles/original.json   # điền ANTHROPIC_API_KEY thật (sk-ant-...)
-  ```
-  Nếu không dùng Anthropic-direct thì bỏ qua — chỉ cần 1 trong 9router/local sống là đủ.
+- **9router / local**: chỉ được chọn khi probe **200**.
+- **`original` = SAFE-HARBOR cuối cùng**: nếu cả 9router + local chết, `fallback` **luôn force apply `original` — KHÔNG cần probe 200**. Lý do: thà nối thẳng Anthropic-direct còn hơn để Claude kẹt trên router chết; và probe `/models` có thể false-negative (IPv6 route, transient) trong khi `/messages` vẫn chạy. → Claude **không bao giờ** ở lại endpoint chết.
+
+- ✅ Đã test (xem §8): fallback lặp qua router chết rồi force sang `original`, kể cả khi `original` cũng probe fail — settings vẫn được ghi sang `original`.
+
+⚠️ **Điều kiện để safe-harbor thật sự cứu Claude:** `original.json` phải có **ANTHROPIC_API_KEY thật** (`sk-ant-...`). Bản ship là placeholder → probe **401** → khi force sang original, Claude **vẫn lỗi 401** trên mọi call (force-switch không tự tạo được key). `fallback` sẽ in cảnh báo rõ khi gặp 401/403.
+
+```bash
+$EDITOR ~/.claude/profiles/original.json   # điền ANTHROPIC_API_KEY thật (sk-ant-...)
+ccswitch check                             # xác nhận: original: 200 OK  ← BẮT BUỘC trước khi tin dùng
+```
+
+Chừng nào `ccswitch check` báo `original: 200` thì đảm bảo "mọi lỗi router → về original sống" mới thành thật. Nếu vẫn 401 → key sai/thiếu, safe-harbor chỉ chuyển endpoint chứ không cứu được.
 
 ---
 
@@ -206,9 +216,9 @@ jq -r '.env.ANTHROPIC_BASE_URL' "$T/.claude/settings.json"   # EXPECT: http://12
 
 Kết quả mong đợi: hook in `9router down → local down → first healthy: original`, và `settings.json` đổi sang mock. → **fallback cuối chạy đúng**.
 
-### 8.3 Tất cả down → fail-safe
+### 8.3 Tất cả down → safe-harbor vẫn force về original
 
-Như 8.2 nhưng `original` cũng trỏ port chết (vd `:28098`). Kỳ vọng: hook in `❌ all profiles down`, và `settings.json` **giữ nguyên** (không mutate).
+Như 8.2 nhưng `original` cũng trỏ port chết. Kỳ vọng (hành vi mới): hook in `9router down → local down → ⚠ original probe=... forcing anyway`, và `settings.json` **vẫn được ghi sang `original`** (KHÔNG kẹt trên router chết). Đây là điểm "mọi lỗi phải về original".
 
 ### 8.4 Tắt auto-switch
 
