@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   ccswitch — swap Claude Code auth profile (Windows / PowerShell port).
 
@@ -139,7 +139,8 @@ function Set-ProfileEnv($rawName) {
 
   Copy-Item $Settings "$Settings.bak" -Force
   $s = Get-Content $Settings -Raw | ConvertFrom-Json
-  $s.env = $profObj
+  # PS 5.1: cannot assign to a property that does not exist yet -> use Add-Member (-Force overwrites).
+  $s | Add-Member -NotePropertyName env -NotePropertyValue $profObj -Force
   # depth 10 preserves nested hooks/permissions objects
   $s | ConvertTo-Json -Depth 10 | Set-Content $Settings -Encoding UTF8
 
