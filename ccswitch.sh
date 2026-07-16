@@ -2,67 +2,171 @@
 # ccswitch — swap Claude Code auth profile.
 # Only replaces the `env` block in ~/.claude/settings.json; leaves everything else intact.
 #
-# Profiles (priority order):
-#   9router  (DEFAULT)  https://9router.acegalaxy.co/v1   — remote router
-#   original            https://api.anthropic.com          — Anthropic direct (safe-harbor fallback)
+# Targets (priority order):
+#   claude        (DEFAULT)  https://9router.acegalaxy.co/v1  cc/* claude   — Claude via 9router
+#   deepseek                 (same base)                      ds/* deepseek — DeepSeek via 9router
+#   subscription             (no env block)                   — Claude Code OAuth login (safe-harbor)
 #
-# Alias: direct->original (backward compat).
+# claude / deepseek both hit the SAME base URL through 9router; they differ ONLY in the
+# ANTHROPIC_DEFAULT_*_MODEL block (model prefix cc/ vs ds/) and SHARE ONE 9router key (fill the same
+# token into both profiles). Since they share one router, a router outage takes both down → the
+# single fallback is `subscription`.
+# (codex/gpt via cx/* removed: 9router returns raw OpenAI wire format for cx/*, which Claude Code
+#  cannot parse — kept out until 9router adds an Anthropic-format translation layer for it.)
+#
+# `subscription` is NOT a profile file: it removes the env block so Claude Code falls back to its
+# own OAuth subscription login. It needs no key and is never probed — it is the guaranteed terminal.
+# Aliases (backward compat): original->subscription, direct->subscription, clear==subscription.
 #
 # Usage:
-#   ccswitch              # show current + health of all profiles
-#   ccswitch 9router      # remote router (default)
-#   ccswitch original     # straight to api.anthropic.com
-#   ccswitch check        # probe health of every profile
-#   ccswitch fallback     # pick first healthy profile in order 9router->original
-#   ccswitch clear        # remove the env block (revert to Anthropic-direct default)
+#   ccswitch                # show current target + router-family health + subscription note
+#   ccswitch claude         # Claude via 9router (default)
+#   ccswitch deepseek       # DeepSeek via 9router (ds/* models)
+#   ccswitch subscription   # remove env block -> Claude Code OAuth subscription
+#   ccswitch spawn <target> # launch a SEPARATE Claude Code instance pinned to <target> via process
+#                           #   env (settings.json untouched). Open N terminals + spawn N targets =
+#                           #   N vendors running IN PARALLEL. NOTE: same 9router account = shared quota.
+#   ccswitch check          # probe router health (all profiles) + verify subscription OAuth credential
+#   ccswitch fallback       # active router profile if healthy, else fall back to subscription
+#   ccswitch set-key [p]    # prompt (hidden) for a new key, write it into profile p (default claude), then apply
+#   ccswitch clear          # alias of subscription (remove env block)
 set -euo pipefail
 
 CLAUDE_DIR="$HOME/.claude"
 SETTINGS="$CLAUDE_DIR/settings.json"
 PROFILES="$CLAUDE_DIR/profiles"
 
-# priority order used by `status` and `fallback`
-ORDER=(9router original)
+# real profile files (each has its own token); subscription is env-clear, not a file.
+ORDER=(claude deepseek)
 
 die() { echo "❌ $*" >&2; exit 1; }
 
-# resolve alias -> canonical profile name
+# resolve alias -> canonical target name
 canon() {
   case "$1" in
-    direct)  echo original ;;
-    *)       echo "$1" ;;
+    original|direct|clear) echo subscription ;;
+    *)                     echo "$1" ;;
   esac
 }
 
-# probe a profile's base url /models endpoint; echoes http code
+# probe a router profile's /models endpoint; echoes http code.
+# Only the router is a probeable HTTP endpoint — subscription (OAuth) has no URL to probe.
 probe() {
   local prof="$PROFILES/$1.json"
   [ -f "$prof" ] || { echo "000"; return; }
-  local base tok key auth vers
-  base=$(jq -r '.ANTHROPIC_BASE_URL // "https://api.anthropic.com"' "$prof" 2>/dev/null)
+  local base tok
+  base=$(jq -r '.ANTHROPIC_BASE_URL // empty' "$prof" 2>/dev/null || true)
   tok=$(jq -r '.ANTHROPIC_AUTH_TOKEN // empty' "$prof" 2>/dev/null || true)
-  key=$(jq -r '.ANTHROPIC_API_KEY // empty' "$prof" 2>/dev/null || true)
-  auth="${tok:-$key}"
-  # api.anthropic.com answers /v1/models only with the anthropic-version header;
-  # without it a healthy endpoint false-reports DOWN.
-  vers=""; case "$base" in *api.anthropic.com*) vers=1 ;; esac
+  [ -n "$base" ] || { echo "000"; return; }
   local code
   code=$(curl -s -m 4 "${base%/}/models" \
-    ${auth:+-H "Authorization: Bearer $auth"} \
-    ${key:+-H "x-api-key: $key"} \
-    ${vers:+-H "anthropic-version: 2023-06-01"} \
+    ${tok:+-H "Authorization: Bearer $tok"} \
     -o /dev/null -w "%{http_code}" 2>/dev/null)
   [ -n "$code" ] && echo "$code" || echo "000"
 }
 
+# Resolve which layer wins per Claude Code's precedence (MECHANISM §2):
+#   ① process env         (exported before `claude` launched)      — beats everything
+#   ② settings.local.json .env  (project-scoped, gitignored)
+#   ③ settings.json       .env  (global ~/.claude, ccswitch-managed)
+#   ④ (none)              → Claude Code OAuth subscription login
+# Prints the effective source + base URL, then lists the other layers for context.
 current() {
-  local base
-  base=$(jq -r '.env.ANTHROPIC_BASE_URL // "https://api.anthropic.com (original)"' "$SETTINGS")
-  echo "current base: $base"
+  local pe_url="${ANTHROPIC_BASE_URL:-}"
+  local pe_model="${ANTHROPIC_DEFAULT_OPUS_MODEL:-}"
+  local local_settings="$CLAUDE_DIR/settings.local.json"
+  local sl_url="" sg_url="" sl_model="" sg_model=""
+  if [ -f "$local_settings" ]; then
+    sl_url=$(jq -r '.env.ANTHROPIC_BASE_URL // empty' "$local_settings" 2>/dev/null || true)
+    sl_model=$(jq -r '.env.ANTHROPIC_DEFAULT_OPUS_MODEL // empty' "$local_settings" 2>/dev/null || true)
+  fi
+  sg_url=$(jq -r '.env.ANTHROPIC_BASE_URL // empty' "$SETTINGS" 2>/dev/null || true)
+  sg_model=$(jq -r '.env.ANTHROPIC_DEFAULT_OPUS_MODEL // empty' "$SETTINGS" 2>/dev/null || true)
+
+  # tag (url, model) as a known target name. The router profiles share one base URL (9router),
+  # so the model prefix (cc/ vs ds/) is what tells them apart.
+  tag() {
+    local url="$1" model="$2"
+    case "$url" in
+      *9router.acegalaxy.co*)
+        case "$model" in
+          ds/*) echo "deepseek" ;;
+          cc/*) echo "claude" ;;
+          *)    echo "claude" ;;
+        esac ;;
+      "") echo "subscription" ;;
+      *)  echo "custom" ;;
+    esac
+  }
+
+  echo "── effective source (Claude Code precedence §2) ──"
+  if [ -n "$pe_url" ]; then
+    echo "▶ ① PROCESS ENV  →  $(tag "$pe_url" "$pe_model") ($pe_url${pe_model:+, $pe_model})"
+    echo "     ⚠ env đã export đè mọi file settings; ccswitch sửa settings sẽ KHÔNG có tác dụng đến khi restart Claude Code với env sạch."
+  elif [ -n "$sl_url" ]; then
+    echo "▶ ② settings.local.json  →  $(tag "$sl_url" "$sl_model") ($sl_url${sl_model:+, $sl_model})"
+  elif [ -n "$sg_url" ]; then
+    echo "▶ ③ settings.json  →  $(tag "$sg_url" "$sg_model") ($sg_url${sg_model:+, $sg_model})"
+  else
+    echo "▶ ④ subscription (no env block anywhere) → Claude Code OAuth login"
+  fi
+  echo "     (caveat: ① chỉ thấy được nếu ccswitch chạy trong shell có sẵn biến; Claude Code process thật có thể khác — verify: env | grep ANTHROPIC_BASE_URL)"
+
+  echo "── các tầng khác ──"
+  echo "  ① process env         : ${pe_url:-(unset)}${pe_model:+  [$pe_model]}"
+  echo "  ② settings.local.json : ${sl_url:-(no env block)}${sl_model:+  [$sl_model]}"
+  echo "  ③ settings.json       : ${sg_url:-(no env block → subscription)}${sg_model:+  [$sg_model]}"
+}
+
+# Verify the subscription safe-harbor: subscription is env-clear (no URL to probe), but it only
+# actually rescues Claude when the machine has an OAuth login (§6). We can check for that credential:
+#   mac   -> Keychain service "Claude Code-credentials"
+#   linux -> ~/.claude/.credentials.json
+# Account email + subscriptionType come from ~/.claude.json (oauthAccount) when present.
+# Echoes a one-line status; never prints tokens.
+probe_subscription() {
+  local cred="" src=""
+  if command -v security >/dev/null 2>&1; then
+    cred=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null || true)
+    [ -n "$cred" ] && src="keychain"
+  fi
+  if [ -z "$cred" ]; then
+    for f in "$CLAUDE_DIR/.credentials.json" "$CLAUDE_DIR/credentials.json"; do
+      [ -f "$f" ] && { cred=$(cat "$f" 2>/dev/null); src="file"; break; }
+    done
+  fi
+
+  if [ -z "$cred" ]; then
+    echo "✗ NO OAuth credential — safe-harbor will prompt login on first use (run 'claude' + login)"
+    return
+  fi
+
+  # credential present: try to surface subscriptionType (from cred) + account (from ~/.claude.json)
+  local sub acct
+  sub=$(printf '%s' "$cred" | jq -r '.claudeAiOauth.subscriptionType // empty' 2>/dev/null || true)
+  acct=$(jq -r '.oauthAccount.emailAddress // empty' "$HOME/.claude.json" 2>/dev/null || true)
+  local detail=""
+  [ -n "$acct" ] && detail="$acct"
+  [ -n "$sub" ] && detail="${detail:+$detail, }$sub"
+  echo "✓ logged in${detail:+ ($detail)} [$src] → safe-harbor OK"
+}
+
+# remove the env block -> Claude Code reverts to its own OAuth subscription login.
+clear_env() {
+  [ -f "$SETTINGS" ] || die "settings not found: $SETTINGS"
+  cp "$SETTINGS" "$SETTINGS.bak"
+  jq 'del(.env)' "$SETTINGS.bak" > "$SETTINGS.tmp" \
+    || die "jq del failed (settings unchanged, see $SETTINGS.bak)"
+  mv "$SETTINGS.tmp" "$SETTINGS"
+  echo "✅ switched to 'subscription' — removed env block (backup: $SETTINGS.bak)."
+  echo "   Claude Code will use its OAuth subscription login (run 'claude' + login if needed)."
+  echo "↻ restart Claude Code (quit + reopen) to load new env."
 }
 
 apply() {
   local name; name=$(canon "$1")
+  # subscription is not a profile file — it is the absence of an env block.
+  if [ "$name" = "subscription" ]; then clear_env; return; fi
   local prof="$PROFILES/$name.json"
   [ -f "$prof" ] || die "profile not found: $prof"
   [ -f "$SETTINGS" ] || die "settings not found: $SETTINGS"
@@ -72,52 +176,151 @@ apply() {
     || die "jq merge failed (settings unchanged, see $SETTINGS.bak)"
   mv "$SETTINGS.tmp" "$SETTINGS"
   echo "✅ switched to '$name' profile (backup: $SETTINGS.bak)"
-  if [ "$name" = "original" ] && jq -e '.env.ANTHROPIC_API_KEY // "" | test("fill-me")' "$SETTINGS" >/dev/null 2>&1; then
-    echo "⚠️  original profile still has placeholder key — edit $PROFILES/original.json then re-run."
-  fi
   echo "↻ restart Claude Code (quit + reopen) to load new env."
 }
 
+# which router profile is currently applied? echoes claude|deepseek (default claude)
+# by reading the active model prefix from settings.json. Used by `fallback`.
+active_router_profile() {
+  local m
+  m=$(jq -r '.env.ANTHROPIC_DEFAULT_OPUS_MODEL // empty' "$SETTINGS" 2>/dev/null || true)
+  case "$m" in
+    ds/*) echo deepseek ;;
+    *)    echo claude ;;
+  esac
+}
+
+# set-key [profile] — prompt (hidden) for a new key, write it into the profile, then apply.
+# claude/deepseek share ONE 9router key — fill the same token into both profiles; subscription is
+# env-clear (rejected below).
+set_key() {
+  local name; name=$(canon "${1:-claude}")
+  [ "$name" = "subscription" ] && \
+    die "subscription uses Claude Code's OAuth login — no key to set. Run: ccswitch subscription, then 'claude' + login."
+  local prof="$PROFILES/$name.json"
+  [ -f "$prof" ] || die "profile not found: $prof (run setup first)"
+  jq empty "$prof" 2>/dev/null || die "profile $prof is not valid JSON"
+
+  local field="ANTHROPIC_AUTH_TOKEN"
+
+  [ -t 0 ] || die "set-key needs an interactive terminal (no TTY)."
+  local key
+  printf "▸ Paste new key for '%s' → %s (input hidden): " "$name" "$field"
+  read -rs key; echo
+  [ -n "$key" ] || die "no key entered — profile unchanged."
+
+  cp "$prof" "$prof.bak"
+  jq --arg f "$field" --arg k "$key" '.[$f] = $k' "$prof" > "$prof.tmp" \
+    && mv "$prof.tmp" "$prof" \
+    || { rm -f "$prof.tmp"; die "failed to write key (profile unchanged, see $prof.bak)"; }
+  unset key
+  echo "✅ key updated in profiles/$name.json (backup: $prof.bak)"
+  apply "$name"
+}
+
+# spawn <target> [claude-args…] — launch a SEPARATE Claude Code instance pinned to <target>
+# via PROCESS ENV (precedence tier ①, MECHANISM §2), leaving ~/.claude/settings.json untouched.
+# Open N terminals + spawn N different targets = N vendors running IN PARALLEL — the only way
+# to have >1 vendor active at once (a single instance reads one env → one model).
+# subscription is env-clear (no profile to export) → rejected; use `ccswitch subscription` + plain `claude`.
+# NOTE: both route through the same 9router account, so parallel instances SHARE one quota.
+spawn() {
+  local name; name=$(canon "${1:-claude}")
+  [ "$name" = "subscription" ] && \
+    die "spawn needs a real router target (claude|deepseek). subscription is env-clear — run: ccswitch subscription, then plain 'claude'."
+  local prof="$PROFILES/$name.json"
+  [ -f "$prof" ] || die "profile not found: $prof (run setup first)"
+  jq empty "$prof" 2>/dev/null || die "profile $prof is not valid JSON"
+
+  local c; c=$(probe "$name")
+  [ "$c" = "200" ] || echo "⚠️  '$name' health=$c (not 200) — spawning anyway, may be down"
+
+  # export every field from the profile into this shell's env, then exec claude.
+  local k v
+  while IFS=$'\t' read -r k v; do
+    [ -n "$k" ] && export "$k=$v"
+  done < <(jq -r 'to_entries[] | [.key, .value] | @tsv' "$prof")
+
+  # distinguish the terminal so parallel windows are readable
+  printf '\033]0;claude:%s\007' "$name"
+
+  # resolve the real binary (user may have a stale `claude` alias — don't rely on it)
+  local bin; bin=$(command -v claude 2>/dev/null || true)
+  [ -n "$bin" ] || bin="$HOME/.local/bin/claude"
+  [ -x "$bin" ] || die "claude binary not found (looked at: command -v claude, ~/.local/bin/claude)"
+
+  echo "▶ spawning claude pinned to '$name' (process env only — settings.json untouched)"
+  exec "$bin" "${@:2}"
+}
+
 case "${1:-status}" in
-  9router|original|direct)
-    name=$(canon "$1"); c=$(probe "$name")
-    [ "$c" = "200" ] || echo "⚠️  '$name' health=$c (not 200) — switching anyway, may be down"
-    apply "$name" ;;
+  claude|deepseek)
+    # both are profile files that route through 9router (differ only by model prefix).
+    t="$1"
+    c=$(probe "$t")
+    [ "$c" = "200" ] || echo "⚠️  '$t' health=$c (not 200) — switching anyway, may be down"
+    apply "$t" ;;
+  subscription|original|direct|clear)
+    # all resolve to subscription (env-clear -> Claude Code OAuth login)
+    apply subscription ;;
   check)
     for p in "${ORDER[@]}"; do
       c=$(probe "$p"); echo "  $p: $c $([ "$c" = 200 ] && echo OK || echo DOWN)"
-    done ;;
-  fallback)
-    # Prefer the healthy router (9router). `original` (Anthropic-direct) is the
-    # guaranteed SAFE-HARBOR terminal: apply it even if its probe is not 200,
-    # so Claude never stays stuck on a dead router. Probe here is advisory only —
-    # /models can false-negative (IPv6 route, transient) while /messages still works.
-    for p in 9router; do
-      c=$(probe "$p")
-      if [ "$c" = "200" ]; then echo "→ first healthy: $p"; apply "$p"; exit 0; fi
-      echo "  $p down ($c), trying next…"
     done
-    oc=$(probe original)
-    case "$oc" in
-      200) echo "→ safe-harbor: original ($oc)" ;;
-      4*)  echo "⚠️  original probe=$oc (key sai/placeholder) — vẫn switch, NHƯNG Claude sẽ lỗi tới khi điền ANTHROPIC_API_KEY thật vào profiles/original.json" ;;
-      *)   echo "⚠️  original probe=$oc — forcing anyway (safe harbor; probe có thể false-negative)" ;;
-    esac
-    apply original ;;
-  clear)
-    [ -f "$SETTINGS" ] || die "settings not found: $SETTINGS"
-    cp "$SETTINGS" "$SETTINGS.bak"
-    jq 'del(.env)' "$SETTINGS.bak" > "$SETTINGS.tmp" \
-      || die "jq del failed (settings unchanged, see $SETTINGS.bak)"
-    mv "$SETTINGS.tmp" "$SETTINGS"
-    echo "✅ removed env block (backup: $SETTINGS.bak) — reverts to Anthropic-direct default."
-    echo "↻ restart Claude Code (quit + reopen) to load new env." ;;
+    echo "  subscription: $(probe_subscription)" ;;
+  fallback)
+    # Keep the currently-active router profile if healthy (don't force claude when the user is on
+    # deepseek). Resolve active target from settings.json's model prefix; default claude.
+    # `subscription` is the guaranteed SAFE-HARBOR terminal: removes the env block so Claude Code
+    # uses its own OAuth login — always reachable, no key/probe. Claude never stays stuck on a
+    # dead router. Both profiles share one router, so a router outage means subscription.
+    t=$(active_router_profile)
+    c=$(probe "$t")
+    if [ "$c" = "200" ]; then echo "→ router healthy: $t"; apply "$t"; exit 0; fi
+    echo "  $t down ($c) → safe-harbor: subscription (OAuth)"
+    apply subscription ;;
+  spawn)
+    # launch a separate instance pinned to the target via process env (settings.json untouched);
+    # forward any remaining args to claude. Open multiple terminals to run vendors in parallel.
+    spawn "${2:-claude}" "${@:3}" ;;
+  set-key)
+    set_key "${2:-claude}" ;;
+  help|--help|-h)
+    cat <<'EOF'
+ccswitch — swap Claude Code auth (edits only the `env` block in ~/.claude/settings.json)
+
+USAGE
+  ccswitch [command]
+
+TARGETS (switch-in-place; RESTART Claude Code after — env loads at launch)
+  claude              Claude via 9router          (cc/* models)   ⭐ default
+  deepseek            DeepSeek via 9router         (ds/* models)
+  subscription        remove env block → Claude Code OAuth login  (safe-harbor, no key)
+                      aliases: original | direct | clear
+
+  claude + deepseek share ONE 9router base URL AND ONE token
+  (fill the same key into both profiles). Router down → both down → subscription.
+
+COMMANDS
+  status  (default)   show active target (by model prefix) + health + subscription
+  check               probe health of every router profile + verify subscription
+  fallback            keep active router if healthy, else drop to subscription
+  spawn <target> [..] launch a SEPARATE pinned instance (settings.json untouched)
+  set-key [profile]   paste a key (hidden) into a profile, then apply  (default: claude)
+  help | -h           this help
+
+KEYS
+  ccswitch set-key claude       # then: set-key deepseek with the SAME token
+  profiles live at ~/.claude/profiles/*.json  (local, never committed)
+EOF
+    exit 0 ;;
   status|"")
     current
     for p in "${ORDER[@]}"; do
       c=$(probe "$p"); echo "  $p: $c $([ "$c" = 200 ] && echo OK || echo DOWN)"
     done
+    echo "  subscription: $(probe_subscription)"
     echo "profiles: $(ls "$PROFILES" 2>/dev/null | sed 's/\.json//' | tr '\n' ' ')" ;;
   *)
-    die "usage: ccswitch [9router|original|check|fallback|clear|status]" ;;
+    die "usage: ccswitch [claude|deepseek|subscription|spawn <target>|check|fallback|set-key [profile]|clear|status|help]" ;;
 esac

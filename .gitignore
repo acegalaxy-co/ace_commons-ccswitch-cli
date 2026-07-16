@@ -3,3 +3,5 @@
 *.tmp
 # guard against accidentally dropping a filled-in settings.json here
 settings.json
+# macOS noise
+.DS_Store

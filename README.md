@@ -1,13 +1,18 @@
 # ccswitch — Claude Code endpoint switcher
 
-Đổi nhanh endpoint auth của **Claude Code** giữa **9router** (mặc định) và **Anthropic direct** — chỉ thay block `env` trong `~/.claude/settings.json`, không đụng phần còn lại (hooks, permissions...).
+Đổi nhanh endpoint auth của **Claude Code** giữa các model qua **9router** và **subscription** (OAuth login gốc của Claude Code) — chỉ thay block `env` trong `~/.claude/settings.json`, không đụng phần còn lại (hooks, permissions...).
 
-| Profile | Endpoint | Vai trò |
+| Target | Cơ chế | Vai trò |
 |---|---|---|
-| **`9router`** | `https://9router.acegalaxy.co/v1` | ⭐ **DEFAULT** — remote router (multi-model, key riêng) |
-| `original` | `https://api.anthropic.com` | Safe-harbor fallback — nối thẳng Anthropic (cần `ANTHROPIC_API_KEY` thật) |
+| **`claude`** | `env` = 9router + model `cc/*` (claude) | ⭐ **DEFAULT** — Claude qua 9router |
+| `deepseek` | 9router + model `ds/*` | DeepSeek qua 9router |
+| `subscription` | **gỡ block `env`** | Safe-harbor fallback — Claude Code dùng OAuth subscription login (không cần key) |
 
-> Alias tương thích ngược: `direct` → `original`.
+> `claude` / `deepseek` **chung 1 base URL** `https://9router.acegalaxy.co/v1` **và chung 1 key** (điền cùng 1 token 9router vào cả 2 profile); khác nhau **chỉ ở model prefix** (`cc/` vs `ds/`).
+>
+> _(Đã bỏ `codex`/GPT (`cx/*`): 9router trả raw OpenAI wire format cho `cx/*`, Claude Code không parse được. Thêm lại khi 9router có lớp dịch sang Anthropic format.)_
+> `subscription` KHÔNG phải profile file: nó xóa block `env` để Claude Code quay về OAuth login gốc.
+> Alias tương thích ngược: `original` / `direct` / `clear` → `subscription`.
 
 ---
 
@@ -43,35 +48,45 @@ Installer sẽ:
 
 ---
 
-## 2. Điền key (bắt buộc 1 lần)
+## 2. Điền key (mỗi target 1 key riêng — chỉ điền cái bạn xài)
 
-Template dùng placeholder — thay bằng key thật:
+`setup.sh` hỏi key từng target (Enter để bỏ qua cái không dùng). Hoặc điền sau:
 
 ```bash
-# mac/linux
-$EDITOR ~/.claude/profiles/9router.json     # thay <your-9router-key>
-```
-```powershell
-# windows
-notepad $env:USERPROFILE\.claude\profiles\9router.json
+# mac/linux — nhập ẩn rồi apply luôn. claude + deepseek dùng CÙNG 1 key 9router.
+ccswitch set-key claude       # key cho Claude qua 9router
+ccswitch set-key deepseek     # DeepSeek qua 9router — điền cùng token với claude
 ```
 
-> 🔑 Xin key 9router từ lead. **Không commit key** — file `~/.claude/profiles/*.json` là local, không đẩy git.
+Hoặc sửa file trực tiếp:
+
+```bash
+$EDITOR ~/.claude/profiles/deepseek.json     # thay <your-9router-key>
+```
+```powershell
+notepad $env:USERPROFILE\.claude\profiles\deepseek.json
+```
+
+> 🔑 Xin key từ lead. `claude` + `deepseek` **chung 1 token** (điền giống nhau vào cả 2 file). **Không commit key** — file `~/.claude/profiles/*.json` là local, không đẩy git.
 
 ---
 
 ## 3. Dùng
 
 ```bash
-ccswitch                # xem endpoint hiện tại + health cả 2 profile
-ccswitch 9router        # → remote (default)
-ccswitch original       # → Anthropic direct
-ccswitch check          # probe health tất cả profile
-ccswitch fallback       # 9router nếu healthy; router chết → FORCE về original (safe-harbor)
-ccswitch clear          # gỡ block env (về Anthropic-direct mặc định)
+ccswitch                # xem target đang active (theo model prefix) + health + subscription note
+ccswitch claude         # → Claude qua 9router (default)
+ccswitch deepseek       # → DeepSeek qua 9router
+ccswitch subscription   # → gỡ env block, dùng OAuth subscription login
+ccswitch spawn <target> # → mở 1 instance RIÊNG ghim target đó (settings.json không đổi)
+ccswitch check          # probe health cả 2 profile + verify subscription OAuth
+ccswitch fallback       # giữ target đang active nếu router healthy; router chết → subscription
+ccswitch set-key [t]    # nhập key mới (ẩn) cho target t (default claude) rồi apply
+ccswitch clear          # alias của subscription (gỡ block env)
+ccswitch help           # (hoặc -h) in bảng lệnh + target đầy đủ
 ```
 
-Windows: cú pháp giống hệt (`ccswitch 9router`, ...).
+Windows: cú pháp giống hệt (`ccswitch claude`, ...).
 
 > ⚠️ **Sau mỗi lần switch phải RESTART Claude Code** (quit + mở lại) — env chỉ load lúc khởi động.
 
@@ -85,32 +100,49 @@ Hook `SessionStart` (`hooks/check-router.sh`) probe endpoint đang active mỗi 
 
 Ví dụ output `ccswitch`:
 ```
-current base: https://9router.acegalaxy.co/v1
-  9router: 200 OK
-  original: 404 DOWN      ← chưa điền key original (bình thường nếu không dùng)
-profiles: 9router original
+── effective source (Claude Code precedence §2) ──
+▶ ③ settings.json  →  claude (https://9router.acegalaxy.co/v1, cc/claude-opus-4-8)
+── các tầng khác ──
+  claude: 200 OK
+  deepseek: 200 OK
+  subscription: ✓ logged in (you@acegalaxy.co, max) [keychain] → safe-harbor OK
+profiles: claude deepseek
 ```
+
+### Chạy nhiều vendor SONG SONG
+
+`ccswitch <target>` chỉ đổi **1 instance** — 1 process Claude Code đọc 1 block `env` → 1 model. Muốn **cả 2 vendor cùng active** thì cần **2 process riêng**. Dùng `spawn` (hoặc 2 alias `setup` tạo sẵn):
+
+```
+# mỗi lệnh trong 1 terminal riêng → 2 vendor chạy đồng thời
+claude-cc      # = ccswitch spawn claude    → Claude (cc/*)
+claude-ds      # = ccswitch spawn deepseek  → DeepSeek (ds/*)
+```
+
+`spawn` export model vào **process env** (tầng ① — thắng mọi settings file) rồi gọi `claude`, nên **KHÔNG đụng `settings.json`** — target đang switch-in-place của bạn giữ nguyên. Không cần restart: mỗi instance sinh ra đã pin sẵn vendor.
+
+> ⚠️ **Quota chung.** 2 target cùng đi qua 1 account 9router (chung 1 key) → **share chung 1 quota**. Chạy 2 song song = đốt quota nhanh gấp ~2. Chung 1 token, KHÔNG tách quota (1 email = 1 quota); tách thật cần account 9router khác email.
+>
+> `spawn subscription` bị từ chối — subscription là env-clear (gỡ block), không có gì để export. Muốn subscription thì `ccswitch subscription` rồi chạy `claude` thường.
 
 ---
 
-## 4. Model — nhớ prefix `cc/`
+## 4. Model — prefix theo target
 
-Với `9router`, model **phải** có prefix `cc/`:
+Model qua 9router **phải** có prefix. Mỗi profile map sẵn 4 tier (Opus/Sonnet/Haiku/Fable) vì Claude Code luôn request theo tier:
 
-| Alias | Model id |
-|---|---|
-| Opus | `cc/claude-opus-4-8` |
-| Sonnet | `cc/claude-sonnet-5` |
-| Haiku | `cc/claude-haiku-4-5-20251001` |
-| Fable | `cc/claude-fable-5` |
+| Target | Prefix | Ví dụ (Opus tier) |
+|---|---|---|
+| `claude` | `cc/` (claude) | `cc/claude-opus-4-8` |
+| `deepseek` | `ds/` | `ds/deepseek-v4-pro-max` |
 
-Thiếu prefix → lỗi `model_not_found`. (Profile `original` dùng id gốc **không** prefix.)
+Thiếu prefix → lỗi `model_not_found`. Xem model id đầy đủ trong `~/.claude/profiles/<target>.json`, hoặc list live: `curl -s https://9router.acegalaxy.co/v1/models -H "Authorization: Bearer <key>" | jq -r '.data[].id'`. (Ở `subscription` — không có env block — Claude Code tự dùng model mặc định của tài khoản, không cần prefix.)
 
 ---
 
 ## 5. Troubleshoot
 
-**`ccswitch` báo `9router: 000 DOWN` nhưng endpoint vẫn sống**
+**`ccswitch` báo `claude: 000 DOWN` nhưng endpoint vẫn sống**
 Thường do **IPv6 route hỏng** — host resolve ra cả A (IPv4) + AAAA (IPv6), nhưng path IPv6 timeout. Claude Code (Node) tự né sang IPv4 nên vẫn chạy; chỉ `curl`/health-probe bị kẹt. Xác minh:
 ```bash
 curl -4 --resolve 9router.acegalaxy.co:443:172.66.43.28 https://9router.acegalaxy.co/v1/models -H "Authorization: Bearer <key>"
@@ -118,7 +150,7 @@ curl -4 --resolve 9router.acegalaxy.co:443:172.66.43.28 https://9router.acegalax
 Nếu IPv4 trả `200` → endpoint OK, bỏ qua cảnh báo. Muốn dứt điểm: pin IPv4 vào `/etc/hosts`.
 
 **`No active credentials for provider` / `model_not_found`**
-Sai model id — thêm prefix `cc/` (xem mục 4).
+Sai model id — thêm prefix đúng target (`cc/` claude, `ds/` deepseek — xem mục 4).
 
 **`API key required for remote API access`**
 Key trong profile là placeholder hoặc key local nhầm sang remote. Điền đúng key 9router.
@@ -154,6 +186,7 @@ ccswitch-cli/
 ├── hooks/
 │   └── check-router.sh       # SessionStart health probe
 └── profiles/                 # TEMPLATE (placeholder key, an toàn để commit)
-    ├── 9router.json
-    └── original.json
+    ├── claude.json            # claude cc/*
+    └── deepseek.json          # deepseek ds/*  (same key as claude.json)
+                               # subscription không có file — nó là env-clear
 ```

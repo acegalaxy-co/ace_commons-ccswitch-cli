@@ -18,23 +18,31 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 # Endpoint session thực dùng: ưu tiên env (Claude Code truyền xuống hook), fallback settings.json.
 base="${ANTHROPIC_BASE_URL:-}"
+model="${ANTHROPIC_DEFAULT_OPUS_MODEL:-}"
 if [ -z "$base" ] && [ -f "$SETTINGS" ]; then
   base=$(jq -r '.env.ANTHROPIC_BASE_URL // empty' "$SETTINGS" 2>/dev/null || true)
+  model=$(jq -r '.env.ANTHROPIC_DEFAULT_OPUS_MODEL // empty' "$SETTINGS" 2>/dev/null || true)
 fi
 
+# claude / deepseek share the same base URL (9router) → phân biệt bằng model prefix (cc/ ds/).
 case "$base" in
-  *9router.acegalaxy.co*)                 name="9router (remote router)" ;;
-  ""|*api.anthropic.com*)                 name="original (Anthropic-direct)" ;;
+  *9router.acegalaxy.co*)
+    case "$model" in
+      ds/*) name="deepseek (via 9router)" ;;
+      *)    name="claude (via 9router)" ;;
+    esac ;;
+  "")                                     name="subscription (OAuth)" ;;
   *)                                      name="custom" ;;
 esac
 
 # ── Banner (LUÔN in, câu đầu session) ─────────────────────────────
 {
   echo "━━━ ccswitch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "▶ Endpoint đang chạy: ${name}${base:+  ($base)}"
-  echo "  Fallback (khi router chết): 9router → original"
-  echo "    • original = safe-harbor: LUÔN về được (cần key sk-ant- thật để không lỗi)"
-  echo "  Lệnh: ccswitch [check | 9router | original | fallback | clear]"
+  echo "▶ Endpoint đang chạy: ${name}${base:+  ($base${model:+, $model})}"
+  echo "  Fallback (khi router chết): <router hiện tại> → subscription (OAuth)"
+  echo "    • claude/deepseek chung 1 router + 1 key (9router) → router chết là fallback về subscription"
+  echo "    • subscription = safe-harbor: gỡ env → Claude Code dùng OAuth login (luôn về được)"
+  echo "  Lệnh: ccswitch [check | claude | deepseek | subscription | fallback | clear]"
   echo "        đổi endpoint xong → RESTART Claude Code (env nạp lúc khởi động)"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 } >&2
@@ -44,10 +52,10 @@ command -v curl >/dev/null 2>&1 || exit 0
 [ -f "$SETTINGS" ] || exit 0
 case "$base" in
   *9router.acegalaxy.co*) ;;
-  *) exit 0 ;;   # original/custom → không có "cấp trên" để fallback
+  *) exit 0 ;;   # subscription/custom → không có "cấp trên" để fallback
 esac
 
-tok=$(jq -r '.env.ANTHROPIC_AUTH_TOKEN // .env.ANTHROPIC_API_KEY // empty' "$SETTINGS" 2>/dev/null || true)
+tok=$(jq -r '.env.ANTHROPIC_AUTH_TOKEN // empty' "$SETTINGS" 2>/dev/null || true)
 [ -n "${ANTHROPIC_AUTH_TOKEN:-}" ] && tok="$ANTHROPIC_AUTH_TOKEN"
 code=$(curl -s -m 4 "${base%/}/models" ${tok:+-H "Authorization: Bearer $tok"} \
          -o /dev/null -w "%{http_code}" 2>/dev/null); [ -n "$code" ] || code="000"
@@ -68,6 +76,6 @@ echo "$out" | sed 's/^/   /' >&2
 if [ "$rc" -eq 0 ]; then
   echo "   ↻ restart Claude Code (quit + reopen) / Reload Window để nạp endpoint mới." >&2
 else
-  echo "   ❌ Không có endpoint healthy — kiểm tra router hoặc điền key profiles/original.json." >&2
+  echo "   ❌ fallback lỗi — kiểm tra router; subscription (gỡ env) luôn về được, thử: ccswitch subscription." >&2
 fi
 exit 0
