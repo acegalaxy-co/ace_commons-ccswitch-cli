@@ -29,14 +29,44 @@ Copy-Item (Join-Path $Src "ccswitch.ps1") (Join-Path $ClaudeDir "ccswitch.ps1") 
 Copy-Item (Join-Path $Src "hooks\check-router.sh") (Join-Path $Hooks "check-router.sh") -Force
 Write-Host "  ✓ ccswitch.ps1 + hooks\check-router.sh"
 
-# 2. profile templates — copy ONLY if missing (never clobber real keys)
-foreach ($p in @("9router", "original")) {
-  $dst = Join-Path $Profiles "$p.json"
-  if (Test-Path $dst) {
-    Write-Host "  • profiles\$p.json exists — kept (edit manually to update key)"
-  } else {
-    Copy-Item (Join-Path $Src "profiles\$p.json") $dst -Force
-    Write-Host "  ✓ profiles\$p.json (template — fill in your key)"
+# 2. profile template — copy ONLY if missing (never clobber a real key).
+# NOTE (.ps1 parity lag): this installer wires only the `claude` profile. The deepseek profile
+# is copied on macOS/Linux by setup.sh; on Windows, add it by hand (copy profiles\deepseek.json)
+# then `ccswitch set-key deepseek` (same 9router key as claude). TODO: loop $Order.
+$dst9 = Join-Path $Profiles "claude.json"
+if (Test-Path $dst9) {
+  Write-Host "  • profiles\claude.json exists — kept (edit manually or run: ccswitch set-key)"
+} else {
+  Copy-Item (Join-Path $Src "profiles\claude.json") $dst9 -Force
+  Write-Host "  ✓ profiles\claude.json (template — fill in your key)"
+}
+
+# 2b. prompt for the router key (interactive only — never echoed, never clobbers silently)
+$dst9 = Join-Path $Profiles "claude.json"
+if (-not [Environment]::UserInteractive) {
+  Write-Host "  • non-interactive session — skipped key prompt (edit profiles\claude.json manually)"
+} else {
+  $p9  = Get-Content $dst9 -Raw | ConvertFrom-Json
+  $cur = $p9.ANTHROPIC_AUTH_TOKEN
+  $ask = $true
+  if ($cur -and $cur -notmatch '<your-9router-key>') {
+    $ans = Read-Host "  • profiles\claude.json already holds a key. Overwrite? [y/N]"
+    if ($ans -notmatch '^(y|yes)$') { Write-Host "    kept existing key."; $ask = $false }
+  }
+  if ($ask) {
+    $secure = Read-Host "  ▸ Paste your router key (input hidden, Enter to skip)" -AsSecureString
+    $bstr   = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+    $key    = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    if ([string]::IsNullOrEmpty($key)) {
+      Write-Host "    no key entered — kept placeholder (edit profiles\claude.json later)."
+    } else {
+      Copy-Item $dst9 "$dst9.bak" -Force
+      $p9.ANTHROPIC_AUTH_TOKEN = $key
+      $p9 | ConvertTo-Json -Depth 10 | Set-Content $dst9 -Encoding UTF8
+      Write-Host "  ✓ router key saved to profiles\claude.json"
+    }
+    $key = $null
   }
 }
 
@@ -75,10 +105,25 @@ if (-not (Select-String -Path $psProfile -SimpleMatch "function ccswitch" -Quiet
   Write-Host "  • ccswitch function already in $psProfile — skipped"
 }
 
+# 4b. parallel-launcher functions — one per target. Each spawns a SEPARATE Claude Code
+#     instance pinned to that vendor via process env. Run N in N terminals = N vendors in parallel.
+$short = @{ claude = "cc"; deepseek = "ds" }
+foreach ($t in @("claude", "deepseek")) {
+  $fn = "claude-$($short[$t])"
+  $line = "function $fn { & powershell -ExecutionPolicy Bypass -File `"`$env:USERPROFILE\.claude\ccswitch.ps1`" spawn $t @args }"
+  if (-not (Select-String -Path $psProfile -SimpleMatch "function $fn " -Quiet)) {
+    Add-Content $psProfile "`n$line"
+    Write-Host "  ✓ added launcher $fn ($t) to $psProfile"
+  } else {
+    Write-Host "  • launcher $fn already in $psProfile — skipped"
+  }
+}
+
 Write-Host ""
 Write-Host "✅ Installed. Next steps:" -ForegroundColor Green
-Write-Host "   1. Fill your key:   notepad `$env:USERPROFILE\.claude\profiles\9router.json   (replace <your-9router-key>)"
-Write-Host "   2. Reload profile:  . `$PROFILE   then run: ccswitch 9router"
+Write-Host "   1. (if you skipped the prompt) Fill your key:  notepad `$env:USERPROFILE\.claude\profiles\claude.json"
+Write-Host "   2. Reload profile:  . `$PROFILE   then run: ccswitch claude"
 Write-Host "   3. Restart Claude Code (quit + reopen) to load the new env."
+Write-Host "   4. Parallel:  open 3 terminals -> claude-cc / claude-cx / claude-ds (shared 9router quota)"
 Write-Host ""
 Write-Host "Note: the health hook uses 'bash' (Git Bash / WSL). If you have neither, the hook is skipped harmlessly." -ForegroundColor DarkGray
