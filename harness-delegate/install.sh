@@ -11,7 +11,9 @@
 # the documented default is used, so `install.sh </dev/null` is a safe all-defaults
 # dry run).
 #
-#   HARNESS_ROUTE_DIR            project directory                  (default: .)
+#   HARNESS_INSTALL_METHOD       1|2 — 1=enter path, 2=cwd          (default: 1; ignored if HARNESS_ROUTE_DIR set)
+#   HARNESS_ROUTE_DIR            project directory                  (default: .; set = skip method menu)
+#   HARNESS_CONFIRM_PATH         y/n — confirm resolved path        (default: Y)
 #   HARNESS_NONGIT_CONTINUE      y/n — continue if not a git repo   (default: N)
 #   HARNESS_CORE_DIRS            CSV of core source dirs            (default: src)
 #   HARNESS_PROJECT_SLUG         project slug                       (default: basename of route dir)
@@ -52,13 +54,37 @@ prompt_yn() { # prompt_yn <ENV_VAR_NAME> <prompt-text> <Y|N default> → 0=yes 1
 }
 
 # ── 1. route dir ────────────────────────────────────────────────────────
-ROUTE_RAW="$(prompt_val HARNESS_ROUTE_DIR 'Project route directory' '.')"
+# Two install methods: 1) type a project root path, 2) use the current dir.
+# HARNESS_ROUTE_DIR (if set) overrides both and skips the method menu.
+if [ -n "${HARNESS_ROUTE_DIR:-}" ]; then
+  ROUTE_RAW="$HARNESS_ROUTE_DIR"
+else
+  METHOD="$(prompt_val HARNESS_INSTALL_METHOD 'Install method — 1) enter project path  2) use current dir' '1')"
+  case "$METHOD" in
+    2) ROUTE_RAW="$PWD" ;;
+    *) ROUTE_RAW="$(prompt_val __HARNESS_ROUTE_INPUT 'Project root path' '.')" ;;
+  esac
+fi
 case "$ROUTE_RAW" in
   "~") ROUTE_RAW="$HOME" ;;
   "~/"*) ROUTE_RAW="$HOME/${ROUTE_RAW#\~/}" ;;
 esac
-mkdir -p "$ROUTE_RAW"
-ROUTE_DIR="$(cd "$ROUTE_RAW" && pwd)"
+# resolve to absolute for display WITHOUT creating anything (so a typo'd path
+# that the user rejects leaves no stray dir behind)
+if [ -d "$ROUTE_RAW" ]; then
+  ROUTE_DIR="$(cd "$ROUTE_RAW" && pwd)"
+else
+  case "$ROUTE_RAW" in /*) ROUTE_DIR="$ROUTE_RAW" ;; *) ROUTE_DIR="$PWD/$ROUTE_RAW" ;; esac
+fi
+
+# ── verify resolved path before writing anything ─────────────────────────
+echo "📁 Install target: $ROUTE_DIR" >&2
+if ! prompt_yn HARNESS_CONFIRM_PATH "Cài harness vào đúng đường dẫn này" "Y"; then
+  echo "❌ Hủy cài đặt."
+  exit 1
+fi
+mkdir -p "$ROUTE_DIR"
+ROUTE_DIR="$(cd "$ROUTE_DIR" && pwd)"   # normalize (collapse .. and symlinks) post-create
 
 if git -C "$ROUTE_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   IS_GIT=1
