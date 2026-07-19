@@ -28,6 +28,8 @@ New-Item -ItemType Directory -Force -Path $Profiles, $Hooks | Out-Null
 Copy-Item (Join-Path $Src "ccswitch.ps1") (Join-Path $ClaudeDir "ccswitch.ps1") -Force
 Copy-Item (Join-Path $Src "hooks\check-router.sh") (Join-Path $Hooks "check-router.sh") -Force
 Write-Host "  ✓ ccswitch.ps1 + hooks\check-router.sh"
+Copy-Item (Join-Path $Src "statusline-context.sh") (Join-Path $ClaudeDir "statusline-context.sh") -Force
+Write-Host "  ✓ statusline-context.sh (context-usage early-warning bar)"
 
 # 2. profile templates — copy ONLY if missing (never clobber a real key).
 # 3 router profiles (claude, codex, deepseek), all via 9router, sharing ONE token.
@@ -166,6 +168,18 @@ if (-not $already) {
   Write-Host "  ✓ wired SessionStart health hook into settings.json"
 } else {
   Write-Host "  • SessionStart hook already wired — skipped"
+}
+
+# 3a. wire statusLine (context-usage early-warning bar) idempotently
+$s = Get-Content $Settings -Raw | ConvertFrom-Json
+$SlCmd = "bash ~/.claude/statusline-context.sh"
+if ($s.statusLine.command -ne $SlCmd) {
+  Copy-Item $Settings "$Settings.bak" -Force
+  $s | Add-Member -NotePropertyName statusLine -NotePropertyValue ([pscustomobject]@{ type = "command"; command = $SlCmd }) -Force
+  $s | ConvertTo-Json -Depth 10 | Set-Content $Settings -Encoding UTF8
+  Write-Host "  ✓ wired statusLine (context-usage bar) into settings.json"
+} else {
+  Write-Host "  • statusLine already wired — skipped"
 }
 
 # 3b. default model — set only if the user hasn't already chosen one (never clobber a pref).

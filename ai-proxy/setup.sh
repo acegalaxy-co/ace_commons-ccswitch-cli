@@ -22,6 +22,9 @@ cp "$SRC/ccswitch.sh"        "$CLAUDE_DIR/ccswitch.sh"
 cp "$SRC/hooks/check-router.sh" "$HOOKS/check-router.sh"
 chmod +x "$CLAUDE_DIR/ccswitch.sh" "$HOOKS/check-router.sh"
 echo "  ✓ ccswitch.sh + hooks/check-router.sh"
+cp "$SRC/statusline-context.sh" "$CLAUDE_DIR/statusline-context.sh"
+chmod +x "$CLAUDE_DIR/statusline-context.sh"
+echo "  ✓ statusline-context.sh (context-usage early-warning bar)"
 
 # 2. profile templates — copy ONLY if missing (never clobber a real key).
 # 3 router profiles (claude, codex, deepseek), all via 9router, sharing ONE token (fill the same key into all three).
@@ -169,6 +172,17 @@ if ! jq -e --arg c "$HOOK_CMD" \
   echo "  ✓ wired SessionStart auto-switch hook into settings.json (disable: export CCSWITCH_NO_AUTO=1)"
 else
   echo "  • SessionStart hook already wired — skipped"
+fi
+
+# 3a. wire statusLine (context-usage early-warning bar) idempotently
+SL_CMD="bash ~/.claude/statusline-context.sh"
+if [ "$(jq -r '.statusLine.command // empty' "$SETTINGS" 2>/dev/null)" != "$SL_CMD" ]; then
+  cp "$SETTINGS" "$SETTINGS.bak"
+  jq --arg c "$SL_CMD" '.statusLine = { "type": "command", "command": $c }' \
+    "$SETTINGS.bak" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
+  echo "  ✓ wired statusLine (context-usage bar) into settings.json"
+else
+  echo "  • statusLine already wired — skipped"
 fi
 
 # 3b. default model — intentionally NOT set. Let Claude Code pick per its own default
