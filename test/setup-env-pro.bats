@@ -14,6 +14,7 @@ stage_repo() {
   mkdir -p "$STAGE/hooks" "$STAGE/profiles"
   cp "$ROOT/ai-proxy/setup.sh" "$STAGE/setup.sh"
   cp "$ROOT/ai-proxy/ccswitch.sh" "$STAGE/ccswitch.sh"
+  cp "$ROOT/ai-proxy/statusline-context.sh" "$STAGE/statusline-context.sh"
   cp "$ROOT/ai-proxy/hooks/check-router.sh" "$STAGE/hooks/check-router.sh"
   cp "$ROOT/ai-proxy/profiles/claude.json" "$ROOT/ai-proxy/profiles/codex.json" "$ROOT/ai-proxy/profiles/deepseek.json" "$STAGE/profiles/"
 }
@@ -70,25 +71,29 @@ setup() {
   [[ "$key" == *"<your-9router-key>"* ]]
 }
 
-@test "non-interactive: .env.pro is NOT applied when a profile already holds a real key" {
+@test "non-interactive: .env.pro ALWAYS overrides even when a profile already holds a real key" {
+  # By design (setup.sh 2b): .env.pro is the source of truth. When both proxy_host and
+  # proxy_key are present it overwrites all three profiles unconditionally — a pre-existing
+  # real key is replaced, and a notice is printed so the override is not silent.
   write_fake_env_pro "$TEST_HOST" "$TEST_KEY"
   mkdir -p "$HOME/.claude/profiles"
   jq '.ANTHROPIC_AUTH_TOKEN = "existing-real-key"' "$STAGE/profiles/claude.json" > "$HOME/.claude/profiles/claude.json"
   run bash -c "cd '$STAGE' && bash setup.sh </dev/null"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"profiles already hold a key — kept"* ]]
+  [[ "$output" == *".env.pro always overrides"* ]]
   key=$(jq -r '.ANTHROPIC_AUTH_TOKEN' "$HOME/.claude/profiles/claude.json")
-  [ "$key" = "existing-real-key" ]
+  [ "$key" = "$TEST_KEY" ]
 }
 
-@test "interactive: default Enter (Yes) applies .env.pro to all 3 profiles (pty)" {
+@test "interactive: a complete .env.pro auto-applies to all 3 profiles with no prompt (pty)" {
   command -v expect >/dev/null 2>&1 || skip "expect not installed"
+  # With both proxy_host + proxy_key present, setup.sh applies unconditionally — there is
+  # no interactive confirmation to answer, even on a real tty. It should reach eof on its own.
   write_fake_env_pro "$TEST_HOST" "$TEST_KEY"
   run expect -c "
     set timeout 10
     spawn bash -c \"cd '$STAGE' && bash setup.sh\"
-    expect \"Use proxy_host + proxy_key from .env.pro*\"
-    send \"\r\"
+    expect \".env.pro proxy_host + proxy_key applied to profiles/*\"
     expect eof
   "
   [ "$status" -eq 0 ]
@@ -100,14 +105,14 @@ setup() {
   done
 }
 
-@test "interactive: answering no falls back to manual host+key prompts, Enter-skip keeps placeholders (pty)" {
+@test "interactive: no .env.pro falls back to manual host+key prompts, Enter-skip keeps placeholders (pty)" {
   command -v expect >/dev/null 2>&1 || skip "expect not installed"
-  write_fake_env_pro "$TEST_HOST" "$TEST_KEY"
+  # With no .env.pro present, an interactive tty gets the manual prompts (base URL, then
+  # shared key). Enter at each keeps the current placeholders untouched.
+  rm -f "$STAGE/.env.pro"
   run expect -c "
     set timeout 10
     spawn bash -c \"cd '$STAGE' && bash setup.sh\"
-    expect \"Use proxy_host + proxy_key from .env.pro*\"
-    send \"n\r\"
     expect \"Router base URL*\"
     send \"\r\"
     expect \"Paste the shared 9router key*\"
