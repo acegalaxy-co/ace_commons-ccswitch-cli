@@ -126,7 +126,7 @@ Ví dụ output `ccswitch`:
   claude: 200 OK
   codex: 200 OK
   deepseek: 200 OK
-  subscription: ✓ logged in (you@acegalaxy.co, max) [keychain] → safe-harbor OK
+  subscription: ✓ logged in (you@example.com, max) [keychain] → safe-harbor OK
 profiles: claude codex deepseek
 ```
 
@@ -164,7 +164,7 @@ Thiếu prefix → lỗi `model_not_found`. Xem model id đầy đủ trong `~/.
 **`ccswitch` báo `claude: 000 DOWN` nhưng endpoint vẫn sống**
 Thường do **IPv6 route hỏng** — host resolve ra cả A (IPv4) + AAAA (IPv6), nhưng path IPv6 timeout. Claude Code (Node) tự né sang IPv4 nên vẫn chạy; chỉ `curl`/health-probe bị kẹt. Xác minh:
 ```bash
-curl -4 --resolve 9router.proxy.com:443:172.66.43.28 https://9router.proxy.com/v1/models -H "Authorization: Bearer <key>"
+curl -4 --resolve 9router.proxy.com:443:203.0.113.10 https://9router.proxy.com/v1/models -H "Authorization: Bearer <key>"
 ```
 Nếu IPv4 trả `200` → endpoint OK, bỏ qua cảnh báo. Muốn dứt điểm: pin IPv4 vào `/etc/hosts`.
 
