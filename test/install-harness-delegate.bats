@@ -57,19 +57,18 @@ run_install() {
   [ -f "$TARGET/.claude/skills/fix-ledger/SKILL.md" ]
 
   # commands group (default Y) — must land, non-empty, generic (no 9router leak)
-  [ -s "$TARGET/.claude/commands/push-to-git.md" ]
-  [ -f "$TARGET/.claude/commands/loop-feature.md" ]
-  [ -f "$TARGET/.claude/commands/lazy-load-audit.md" ]
-  [ -f "$TARGET/.claude/commands/audit-memory-harness.md" ]
+  [ -s "$TARGET/.claude/commands/git-push-safety.md" ]
+  [ -f "$TARGET/.claude/commands/task-loop-feature.md" ]
   [ -f "$TARGET/.claude/commands/doctor-memory.md" ]
-  [ -f "$TARGET/.claude/commands/commit.md" ]
-  ! grep -q '9router' "$TARGET/.claude/commands/push-to-git.md" || false
+  [ -f "$TARGET/.claude/commands/git-commit.md" ]
+  ! grep -q '9router' "$TARGET/.claude/commands/git-push-safety.md" || false
 
-  # rules group (default Y) — must land, core-dirs substituted into paths: frontmatter
-  [ -f "$TARGET/.claude/rules/git-workflow.md" ]
-  [ -f "$TARGET/.claude/rules/skill-superpowers.md" ]
-  grep -q '"src/\*\*"' "$TARGET/.claude/rules/skill-superpowers.md"
-  grep -q '"lib/\*\*"' "$TARGET/.claude/rules/skill-superpowers.md"
+  # rules group (default Y) — common/ (synced) + project/ (preserved)
+  [ -f "$TARGET/.claude/rules/common/orchestrator.md" ]
+  [ -f "$TARGET/.claude/rules/project/git-workflow.md" ]
+  [ -f "$TARGET/.claude/rules/project/skill-superpowers.md" ]
+  grep -q '"src/\*\*"' "$TARGET/.claude/rules/project/skill-superpowers.md"
+  grep -q '"lib/\*\*"' "$TARGET/.claude/rules/project/skill-superpowers.md"
 
   # no leftover placeholder tokens or 9router-specific hardcoding
   ! grep -rq '@@' "$TARGET" || false
@@ -89,7 +88,7 @@ run_install() {
   grep -q 'claude-code-testproj' "$TARGET/.claude/hooks/pre-edit-orchestrator-gate.sh"
 
   # branch substitution actually happened
-  grep -q '`dev`' "$TARGET/.claude/rules/git-workflow.md"
+  grep -q '`dev`' "$TARGET/.claude/rules/project/git-workflow.md"
 }
 
 @test "check-session-limit.sh has no leftover Session%/Weekly% mechanism" {
@@ -186,5 +185,16 @@ run_install() {
   events_len=$(jq '.hooks.PreToolUse | length' "$TARGET/.claude/settings.json")
 
   [ "$first_len" -eq "$second_len" ]
-  [ "$events_len" -eq 1 ]
+  # Edit|Write|MultiEdit + Bash gate = 2 matchers; no legacy Edit|Write orphan
+  [ "$events_len" -eq 2 ]
+  [ "$(jq '[.hooks.PreToolUse[] | select(.matcher == "Edit|Write")] | length' "$TARGET/.claude/settings.json")" -eq 0 ]
+}
+
+@test "git-hooks group installs executable gitleaks pre-push into .git/hooks/" {
+  run_install
+  [ "$status" -eq 0 ]
+  [ -f "$TARGET/.git/hooks/pre-push" ]
+  [ -x "$TARGET/.git/hooks/pre-push" ]
+  grep -q 'gitleaks' "$TARGET/.git/hooks/pre-push"
+  cmp "$ROOT/harness-delegate/templates/git-hooks/pre-push" "$TARGET/.git/hooks/pre-push"
 }

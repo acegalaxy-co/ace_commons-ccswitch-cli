@@ -141,7 +141,11 @@ build_core_dirs() {
     human_parts+=("$trimmed/")
     # ERE-escape dir name for CORE_DIRS_ALT (Bash-gate command regex). Dir names
     # are normally [a-z0-9._-] but escape ERE metachars to be safe.
-    alt_parts+=("$(printf '%s' "$trimmed" | sed -E 's/[.[\](){}*+?^$|\\/]/\\&/g')")
+    # BSD/macOS sed: '\]' inside a bracket expr does NOT escape ']' — the class
+    # closes early and trailing '*+?' become bare repetition operators (RE error).
+    # POSIX-safe: put ']' first in the class, use '#' delim so '/' needs no escape,
+    # and escape backslash in a separate pass (can't live safely in the bracket).
+    alt_parts+=("$(printf '%s' "$trimmed" | sed -E 's#\\#\\\\#g; s#[]./[(){}*+?^$|]#\\&#g')")
     CORE_DIRS_YAML="${CORE_DIRS_YAML}  - \"$trimmed/**\""$'\n'
   done
   CORE_DIRS_CASE="$(join_by '|' "${case_parts[@]}")"
@@ -404,12 +408,26 @@ if [ "$SEL_GUARD" -eq 1 ] || [ "$SEL_QUALITY" -eq 1 ] || [ "$SEL_SESSIONLIMIT" -
   SETTINGS="$ROUTE_DIR/.claude/settings.json"
   [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
 
-  wire_hook() { # wire_hook <event> <matcher-or-empty> <command>
-    local event="$1" matcher="$2" cmd="$3" tmp
+  wire_hook() { # wire_hook <event> <matcher-or-empty> <command> [legacy-matchers-space-separated]
+    local event="$1" matcher="$2" cmd="$3" legacy="${4:-}" tmp
     tmp="$(mktemp)"
-    jq --arg ev "$event" --arg matcher "$matcher" --arg cmd "$cmd" '
-      .hooks //= {}
+    jq --arg ev "$event" --arg matcher "$matcher" --arg cmd "$cmd" --arg legacy "$legacy" '
+      ($legacy | split(" ") | map(select(length > 0))) as $legacyList
+      | .hooks //= {}
       | .hooks[$ev] //= []
+      # self-heal: drop this command from any legacy matcher block (leave
+      # unrelated commands under that block untouched), then drop the block
+      # entirely if it ends up empty.
+      | .hooks[$ev] |= (
+          map(
+            (.matcher // "") as $m
+            | if ($legacyList | index($m)) != null then
+                .hooks |= map(select(.command != $cmd))
+              else .
+              end
+          )
+          | map(select((.hooks // []) | length > 0))
+        )
       | ( [ .hooks[$ev][] | select((.matcher // "") == $matcher) ] | length ) as $matchCount
       | if $matchCount > 0 then
           .hooks[$ev] |= map(
@@ -429,12 +447,12 @@ if [ "$SEL_GUARD" -eq 1 ] || [ "$SEL_QUALITY" -eq 1 ] || [ "$SEL_SESSIONLIMIT" -
 
   echo "── wiring .claude/settings.json ──"
   if [ "$SEL_GUARD" -eq 1 ]; then
-    wire_hook PreToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit-orchestrator-gate.sh'
+    wire_hook PreToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit-orchestrator-gate.sh' 'Edit|Write'
     wire_hook PreToolUse 'Bash'       '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash-orchestrator-gate.sh'
-    wire_hook PreToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit-secret-scan.sh'
+    wire_hook PreToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit-secret-scan.sh' 'Edit|Write'
   fi
   if [ "$SEL_QUALITY" -eq 1 ]; then
-    wire_hook PostToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit-syntax-check.sh'
+    wire_hook PostToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit-syntax-check.sh' 'Edit|Write'
     wire_hook SessionStart '' '$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-banner.sh'
   fi
   if [ "$SEL_SESSIONLIMIT" -eq 1 ]; then
