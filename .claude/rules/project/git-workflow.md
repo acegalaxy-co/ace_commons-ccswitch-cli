@@ -34,28 +34,25 @@ Bổ sung [[git-conventions]] (org default + commit format). Phần này = branc
 
 ## Worktree (task song song)
 
-- Đặt **trong** project tại `.claude/worktrees/<slug>` (đã gitignored, không xoá thủ công). Path này dùng chung cho cả agent-tool native (`EnterWorktree`) lẫn delegate wrapper (`scripts/delegate/_common.sh`) — path hardcode trong `EnterWorktree`, không đổi được, nên đây là nơi duy nhất.
-- Grep/find phải loại trừ `.claude/worktrees/` tránh context pollution.
-- Tự tạo khi task độc lập / user có nhiều việc dở / user nói rõ:
-  1. Branch mới: `git worktree add .claude/worktrees/<slug> -b feat/<slug>` (branch từ `dev`).
-     Branch có sẵn (vd deploy): `git worktree add .claude/worktrees/<slug> <existing-branch>` (KHÔNG `-b`).
-  2. Báo user path + lệnh `cd`.
-- Naming: `feat/`, `fix/`, `chore/`, `refactor/`, `hotfix/` + slug kebab-case ngắn.
-- Worktree đã tồn tại cho cùng task → dùng lại, không chồng.
-- Delegate wrapper worktree (`.claude/worktrees/delegate-*/`) do wrapper quản lý riêng — xem [[delegate-llm]].
+- Đặt tại `.claude/worktrees/<slug>` (gitignored, không xoá thủ công) — path hardcode trong `EnterWorktree`, dùng chung agent-tool native + delegate wrapper. Grep/find phải loại trừ dir này.
+- Tự tạo khi task độc lập / user nhiều việc dở / user nói rõ:
+  - Branch mới: `git worktree add .claude/worktrees/<slug> -b feat/<slug>` (từ `dev`).
+  - Branch có sẵn (deploy): `git worktree add .claude/worktrees/<slug> <existing-branch>` (KHÔNG `-b`).
+  - Báo user path + lệnh `cd`.
+- Naming: `feat/`, `fix/`, `chore/`, `refactor/`, `hotfix/` + slug kebab-case. Worktree cùng task đã có → dùng lại.
+- Delegate wrapper worktree (`.claude/worktrees/delegate-*/`) do wrapper tự quản — xem [[delegate-llm]].
 
-### Dọn `.claude/worktrees/` — orphan dir + junk
+### Dọn orphan dir + junk
 
-`git worktree prune` CHỈ dọn worktree registered stale — KHÔNG đụng dir rác không-phải-worktree (leftover parent delegate `.claude/worktrees/delegate-*/`, `.DS_Store`, bundle backup lạc chỗ). Cleanup-sau-merge không cover các thứ này.
+`git worktree prune` CHỈ dọn worktree registered stale — không đụng dir rác (leftover `delegate-*/`, `.DS_Store`, bundle lạc chỗ). Trước khi kết session hoặc khi dir bẩn, audit:
 
-- Trước khi kết session / khi thấy `.claude/worktrees/` bẩn, audit:
-  ```bash
-  cd .claude/worktrees && git worktree list  # danh sách worktree HỢP LỆ
-  for d in */; do [ -e "$d/.git" ] || echo "ORPHAN non-worktree: $d"; done
-  ```
-- Orphan dir rỗng (0B, không `.git`) → `rmdir <dir>` (chỉ xoá được nếu rỗng).
-- File lạc chỗ: `.DS_Store` → xoá; `*.bundle` có giá trị → **move ra ngoài repo** (`../`), KHÔNG xoá.
-- Chỉ `rmdir` (không `rm -rf`) cho orphan — dir không rỗng → dừng, báo user.
+```bash
+cd .claude/worktrees && git worktree list  # worktree HỢP LỆ
+for d in */; do [ -e "$d/.git" ] || echo "ORPHAN non-worktree: $d"; done
+```
+
+- Orphan rỗng → `rmdir` (chỉ `rmdir`, không `rm -rf`); không rỗng → dừng, báo user.
+- `.DS_Store` → xoá; `*.bundle` giá trị → move ra `../` (KHÔNG xoá).
 
 ## Trước khi merge — check fix ledger
 
