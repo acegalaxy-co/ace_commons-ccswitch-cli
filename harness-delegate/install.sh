@@ -260,6 +260,7 @@ if [ "$SEL_GUARD" -eq 1 ]; then
   echo "── guard hooks ──"
   install_file "hooks/pre-edit-orchestrator-gate.sh" ".claude/hooks/pre-edit-orchestrator-gate.sh"
   install_file "hooks/pre-bash-orchestrator-gate.sh" ".claude/hooks/pre-bash-orchestrator-gate.sh"
+  install_file "hooks/pre-bash-git-push-gate.sh"     ".claude/hooks/pre-bash-git-push-gate.sh"
   install_file "hooks/pre-edit-secret-scan.sh"        ".claude/hooks/pre-edit-secret-scan.sh"
 fi
 
@@ -451,6 +452,7 @@ if [ "$SEL_GUARD" -eq 1 ] || [ "$SEL_QUALITY" -eq 1 ] || [ "$SEL_SESSIONLIMIT" -
   if [ "$SEL_GUARD" -eq 1 ]; then
     wire_hook PreToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit-orchestrator-gate.sh' 'Edit|Write'
     wire_hook PreToolUse 'Bash'       '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash-orchestrator-gate.sh'
+    wire_hook PreToolUse 'Bash'       '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash-git-push-gate.sh'
     wire_hook PreToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit-secret-scan.sh' 'Edit|Write'
   fi
   if [ "$SEL_QUALITY" -eq 1 ]; then
