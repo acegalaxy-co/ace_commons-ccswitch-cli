@@ -44,7 +44,11 @@ là quyết định họ tự làm thủ công, không phải command tự quy�
 
 ## 3. Sensitive-content scan
 
-Chạy `git status` và `git diff --stat` (so với branch upstream/main, hoặc
+Trước tiên invoke skill `/check-hardcode` (quét rộng: IP/domain/email/generic
+hardcode mà hook auto-block cố ý bỏ qua vì false-positive). Nếu skill report
+finding đáng ngại, DỪNG — không tiếp tục sang phán đoán thủ công bên dưới.
+
+Rồi chạy `git status` và `git diff --stat` (so với branch upstream/main, hoặc
 `HEAD` nếu có thay đổi chưa commit) để xem mọi thứ sắp được push. Rồi
 đọc qua các file đã đổi thật và check:
 
