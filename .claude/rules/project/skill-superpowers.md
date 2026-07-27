@@ -53,3 +53,19 @@ Yêu cầu chưa rõ → Socratic hỏi thu hẹp trước khi plan:
 ## 5. Verify before done
 
 Trước khi báo xong: chạy the project's test command (none configured — infer from README/CI, or ask before assuming), quan sát hành vi thật (không chỉ "code trông đúng"). Mất verify step = chưa xong.
+
+## 6. Executing plans (kỷ luật thực thi, khác writing-plans)
+
+Có plan rồi ≠ code ngay. Thứ tự:
+
+1. **Review gate trước code** — đọc lại plan, nêu gap/lo ngại với user TRƯỚC khi chạm code (không approve-rồi-code mù).
+2. **Verify GIỮA các bước** — mỗi task xong verify ngay, không dồn cuối. Bắt drift sớm.
+3. **Stop-on-blocker** — chặn thì escalate ngay, không tự đoán/ép qua (thrashing = red-flag [[feature-redflags]]).
+4. Workspace isolate (worktree) + close-out → [[git-workflow]].
+
+## 7. Writing skills (khi tự tạo skill mới trong `skills/`)
+
+- **Discovery-first description** — desc nói ĐIỀU KIỆN TRIGGER ("dùng khi X"), KHÔNG tóm tắt workflow. Tóm tắt workflow → agent làm theo desc thay vì đọc skill.
+- **Match form to failure** — shaping problem → recipe; discipline violation → bảng rationalization + red-flag; reference gap → keyword searchable. Không mặc định prohibition-list.
+- **Anti-rationalization** — đóng loophole cụ thể (forbid workaround thật, xử "spirit vs letter"), không nêu rule mơ hồ.
+- **Budget** — skill hay-load giữ < 200 từ; keyword quan trọng đặt sớm.
