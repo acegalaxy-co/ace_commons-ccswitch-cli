@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse hook (matcher: Edit|Write).
+# PreToolUse hook (matcher: Edit|Write|MultiEdit).
 # Orchestrator gate: chặn MAIN agent (Opus) tự Edit/Write file source core.
 # Ép execution route qua delegate subagent (per .claude/rules/orchestrator.md).
 #

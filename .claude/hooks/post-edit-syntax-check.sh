@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PostToolUse hook (matcher: Edit|Write).
+# PostToolUse hook (matcher: Edit|Write|MultiEdit).
 # Nếu file vừa edit là *.js / *.mjs / *.cjs / *.json, chạy quick syntax check.
 # Non-blocking warning để model thấy + sửa, KHÔNG block (chỉ check node-parseable file).
 set -euo pipefail

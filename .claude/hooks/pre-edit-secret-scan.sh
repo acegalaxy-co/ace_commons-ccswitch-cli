@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse hook (matcher: Edit|Write).
+# PreToolUse hook (matcher: Edit|Write|MultiEdit).
 # Block edit nếu nội dung định ghi chứa pattern giống secret.
 #
 # Input: stdin = JSON với fields tool_input.{file_path,content,new_string}
@@ -19,7 +19,12 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 file_path=$(echo "$payload" | jq -r '.tool_input.file_path // empty')
-content=$(echo "$payload" | jq -r '.tool_input.content // .tool_input.new_string // empty')
+# Write→content · Edit→new_string · MultiEdit→edits[].new_string (gom hết về 1 chuỗi).
+content=$(echo "$payload" | jq -r '
+  .tool_input.content
+  // .tool_input.new_string
+  // ((.tool_input.edits // []) | map(.new_string // "") | join("\n"))
+  // empty')
 
 # Skip .env / .env.* — quản qua deny list của settings.json.
 case "$file_path" in
