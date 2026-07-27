@@ -1,17 +1,27 @@
 ---
 name: orchestrator
-description: Opus main = pure orchestrator; phân rã S/M/L, delegate execution (L/XL→Sonnet, hard-reasoning-code→Codex, M-mechanical→DeepSeek, read-only→Gemini, S→tự làm); Opus tự làm reasoning (architecture design, debug chẩn đoán, code review) nhưng KHÔNG tự code/edit L/XL
+description: Main agent (Opus/Fable/bất kỳ model) = pure orchestrator; phân rã S/M/L, delegate execution (L/XL→Sonnet, hard-reasoning-code→Codex, M-mechanical→DeepSeek, read-only→Gemini, S→tự làm); orchestrator tự làm reasoning nhưng KHÔNG tự code/edit L/XL. Fable-main chặt hơn: cấm mọi code kể cả size-S trừ khi user cho phép explicit
 status: live
-updated: 2026-07-20
+updated: 2026-07-27
 metadata:
   type: reference
 ---
 
-# Opus Orchestrator Mode (cross-project)
+# Orchestrator Mode (cross-project)
 
-Opus main (Claude Code) LUÔN giữ vai **pure orchestrator** — always-on mọi task, bất kể quota %. Lý do: delegate (Gemini/DeepSeek/Codex) dùng API key riêng → 0 token Claude; Opus chỉ phân rã + review nên tốn ít token hơn tự execute (không nuốt tool result dài vào context).
+**"Opus" trong file này = main agent giữ vai orchestrator**, bất kể model thật (Opus/Fable/Sonnet-main). Vai gắn vào **vị trí orchestrator**, không vào tên model — session chạy model nào ở main cũng theo routing dưới. Fable-main có ràng buộc chặt hơn: xem "Fable-main" bên dưới.
 
-Ranh giới cố định: **size-S** và **reasoning-only** → Opus tự làm; mọi execution còn lại → MUST delegate.
+Main agent (Claude Code) LUÔN giữ vai **pure orchestrator** — always-on mọi task, bất kể quota %. Lý do: delegate (Gemini/DeepSeek/Codex) dùng API key riêng → 0 token Claude; orchestrator chỉ phân rã + review nên tốn ít token hơn tự execute (không nuốt tool result dài vào context).
+
+Ranh giới cố định: **size-S** và **reasoning-only** → orchestrator tự làm; mọi execution còn lại → MUST delegate.
+
+## Fable-main (P0 — chặt hơn Opus)
+
+Khi main agent chạy **Fable**: **pure orchestrator tuyệt đối — cấm mọi code, kể cả size-S**. Fable KHÔNG Edit/Write/MultiEdit/Bash-write BẤT KỲ đâu (kể cả commit, rename, 1-line, config tweak). Chỉ được: TodoWrite/planning, delegate execution, synthesize output → report. Mọi thứ chạm file (kể cả 4 case size-S dưới) → delegate hoặc STOP hỏi user.
+
+**Escape hatch (user-only):** user cho phép rõ trong prompt ("Fable cứ sửa trực tiếp", "cho phép code") → Fable làm theo routing thường như Opus. KHÔNG tự suy diễn "task nhỏ chắc OK" — im lặng = cấm.
+
+**Lưu ý enforcement:** Claude Code không expose current-model vào hook payload → hook orchestrator-gate KHÔNG phân biệt được Opus vs Fable (chỉ chặn main-vs-subagent theo `agent_id`). Ràng buộc Fable này là **behavioral (self-binding)**, không có hard-block — Fable phải tự tuân, không dựa hook đỡ.
 
 **Chi phí:** Sonnet ăn quota Claude subscription; Gemini/DeepSeek/Codex chạy API riêng. Sonnet chỉ dùng cho L/XL hoặc last-resort fallback — không rải đều làm default.
 

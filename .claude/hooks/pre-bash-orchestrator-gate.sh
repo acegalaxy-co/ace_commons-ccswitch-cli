@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse hook (matcher: Bash).
 # Bịt 2 lỗ mà pre-edit-orchestrator-gate.sh (matcher Edit|Write) KHÔNG cover —
-# MAIN agent (Opus) né gate bằng Bash:
+# MAIN agent (orchestrator — mọi model) né gate bằng Bash:
 #   (A) Direct-CLI bypass: gõ thẳng aider/gemini/codex → mất worktree isolation
 #       + secret redaction của delegate wrapper (per .claude/rules/delegate-llm.md).
 #   (B) Bash-write vào core source (src/) qua redirect / sed -i /
@@ -87,7 +87,7 @@ if [ -n "$ALT" ]; then
     if echo "$cmd" | grep -Eq "$pat"; then
       echo "$(ts) BLOCK main-agent bash-write → ${cmd:0:120}" >> "$LOG" 2>/dev/null || true
       cat >&2 << EOF
-🚦 orchestrator-gate: MAIN agent (Opus) KHÔNG ghi vào source core qua Bash.
+🚦 orchestrator-gate: MAIN agent (orchestrator — mọi model) KHÔNG ghi vào source core qua Bash.
    Command: ${cmd:0:160}
 
    Rule: .claude/rules/orchestrator.md — Opus = pure orchestrator. Edit core

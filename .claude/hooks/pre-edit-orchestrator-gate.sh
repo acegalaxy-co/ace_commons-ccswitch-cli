@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # PreToolUse hook (matcher: Edit|Write|MultiEdit).
-# Orchestrator gate: chặn MAIN agent (Opus) tự Edit/Write file source core.
+# Orchestrator gate: chặn MAIN agent (orchestrator — mọi model) tự Edit/Write file source core.
 # Ép execution route qua delegate subagent (per .claude/rules/orchestrator.md).
 #
 # Ranh giới (path-coarse, không đoán size — nghi ngờ → chặn):
@@ -110,7 +110,7 @@ case "$file_path" in
   */src/*|src/*)
     echo "$(ts) BLOCK main-agent edit → $file_path" >> "$LOG" 2>/dev/null || true
     cat >&2 << EOF
-🚦 orchestrator-gate: MAIN agent (Opus) KHÔNG tự Edit/Write vào source core.
+🚦 orchestrator-gate: MAIN agent (orchestrator — mọi model) KHÔNG tự Edit/Write vào source core.
    File: $file_path
 
    Rule: .claude/rules/orchestrator.md — Opus = pure orchestrator.
