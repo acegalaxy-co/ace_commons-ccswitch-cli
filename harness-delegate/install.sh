@@ -252,6 +252,8 @@ if [ "$SEL_SUBAGENTS" -eq 1 ]; then
   for s in _common run-aider-deepseek run-codex run-gemini doctor; do
     install_file "scripts/delegate/$s.sh" "scripts/delegate/$s.sh"
   done
+  # IPv4-only DNS shim loaded via PYTHONPATH by run-aider-deepseek.sh (P0 perf).
+  install_file "scripts/delegate/lib/sitecustomize.py" "scripts/delegate/lib/sitecustomize.py"
 fi
 
 if [ "$SEL_GUARD" -eq 1 ]; then
