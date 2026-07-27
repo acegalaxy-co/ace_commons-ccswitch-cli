@@ -130,7 +130,7 @@ join_by() { local d="$1"; shift; local IFS="$d"; printf '%s' "$*"; }
 
 build_core_dirs() {
   local csv="$1" d trimmed
-  local -a case_parts=() human_parts=()
+  local -a case_parts=() human_parts=() alt_parts=()
   local IFS=','
   local -a raw=($csv)
   CORE_DIRS_YAML=""
@@ -139,10 +139,14 @@ build_core_dirs() {
     [ -z "$trimmed" ] && continue
     case_parts+=("*/$trimmed/*" "$trimmed/*")
     human_parts+=("$trimmed/")
+    # ERE-escape dir name for CORE_DIRS_ALT (Bash-gate command regex). Dir names
+    # are normally [a-z0-9._-] but escape ERE metachars to be safe.
+    alt_parts+=("$(printf '%s' "$trimmed" | sed -E 's/[.[\](){}*+?^$|\\/]/\\&/g')")
     CORE_DIRS_YAML="${CORE_DIRS_YAML}  - \"$trimmed/**\""$'\n'
   done
   CORE_DIRS_CASE="$(join_by '|' "${case_parts[@]}")"
   CORE_DIRS_HUMAN="$(join_by ' · ' "${human_parts[@]}")"
+  CORE_DIRS_ALT="$(join_by '|' "${alt_parts[@]}")"
   CORE_DIRS_YAML="${CORE_DIRS_YAML%$'\n'}"
 }
 build_core_dirs "$CORE_DIRS_CSV"
@@ -197,6 +201,7 @@ substitute_file() {
   tmp="$(mktemp)"
   while IFS= read -r line || [ -n "$line" ]; do
     line="${line//@@CORE_DIRS_CASE@@/$CORE_DIRS_CASE}"
+    line="${line//@@CORE_DIRS_ALT@@/$CORE_DIRS_ALT}"
     line="${line//@@CORE_DIRS_HUMAN@@/$CORE_DIRS_HUMAN}"
     line="${line//@@CORE_DIRS_YAML@@/$CORE_DIRS_YAML}"
     line="${line//@@PROJECT_SLUG@@/$PROJECT_SLUG}"
@@ -248,6 +253,7 @@ fi
 if [ "$SEL_GUARD" -eq 1 ]; then
   echo "── guard hooks ──"
   install_file "hooks/pre-edit-orchestrator-gate.sh" ".claude/hooks/pre-edit-orchestrator-gate.sh"
+  install_file "hooks/pre-bash-orchestrator-gate.sh" ".claude/hooks/pre-bash-orchestrator-gate.sh"
   install_file "hooks/pre-edit-secret-scan.sh"        ".claude/hooks/pre-edit-secret-scan.sh"
 fi
 
@@ -423,11 +429,12 @@ if [ "$SEL_GUARD" -eq 1 ] || [ "$SEL_QUALITY" -eq 1 ] || [ "$SEL_SESSIONLIMIT" -
 
   echo "── wiring .claude/settings.json ──"
   if [ "$SEL_GUARD" -eq 1 ]; then
-    wire_hook PreToolUse 'Edit|Write' '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit-orchestrator-gate.sh'
-    wire_hook PreToolUse 'Edit|Write' '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit-secret-scan.sh'
+    wire_hook PreToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit-orchestrator-gate.sh'
+    wire_hook PreToolUse 'Bash'       '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash-orchestrator-gate.sh'
+    wire_hook PreToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit-secret-scan.sh'
   fi
   if [ "$SEL_QUALITY" -eq 1 ]; then
-    wire_hook PostToolUse 'Edit|Write' '$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit-syntax-check.sh'
+    wire_hook PostToolUse 'Edit|Write|MultiEdit' '$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit-syntax-check.sh'
     wire_hook SessionStart '' '$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-banner.sh'
   fi
   if [ "$SEL_SESSIONLIMIT" -eq 1 ]; then

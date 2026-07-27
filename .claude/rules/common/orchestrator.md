@@ -33,7 +33,21 @@ Ranh giới cố định: **size-S** và **reasoning-only** → Opus tự làm; 
 | **hard-reasoning-code** | bug khó đã resist fix thường, algo design phức tạp, security-sensitive edit, refactor invariant tinh vi (concurrency, transaction) | `delegate-codex` | → sonnet → STOP: Opus re-decompose spec |
 | **L/XL** | code/edit thật theo spec rõ: implement feature, refactor thường, fix bug sau khi đã chẩn đoán rõ nguyên nhân | `delegate-sonnet` | → codex → STOP: Opus re-decompose spec (KHÔNG rơi về DeepSeek) |
 
-**Risk-path denylist nay có code-level enforcement** (không chỉ dựa Opus tự nhớ bảng trên): `pre-edit-orchestrator-gate.sh` chặn cứng (exit 2) khi persona `delegate-gemini`/`delegate-deepseek` cố Edit/Write vào path risk-tagged (project khai báo qua `env.HARNESS_RISK_DIRS` trong `.claude/settings.json` — đọc runtime, sửa 1 dòng JSON có hiệu lực ngay, không cần re-run installer; xem `harness-delegate/install.sh`). Opus vẫn phải chọn đúng persona (Codex/Sonnet) ngay từ đầu cho domain nhạy cảm (auth/payment/wallet/...) — hook chỉ là lưới an toàn cuối, bị chặn giữa chừng vẫn tốn 1 vòng gọi.
+### Code-level enforcement (không chỉ dựa Opus tự nhớ bảng trên)
+
+Ranh giới "execution vào core → MUST delegate" nay có hook chặn cứng (exit 2), phủ **mọi write surface** để Opus không né được bằng tool khác:
+
+| Hook | Matcher | Chặn gì |
+|---|---|---|
+| `pre-edit-orchestrator-gate.sh` | `Edit\|Write\|MultiEdit` | Main-agent (Opus) Edit/Write/MultiEdit vào core (dir bake install-time từ `HARNESS_CORE_DIRS`). Subagent → allow. + risk-path denylist cho persona `delegate-gemini`/`delegate-deepseek` (chặn dù trong subagent). |
+| `pre-bash-orchestrator-gate.sh` | `Bash` | Main-agent Bash-write core (`sed -i`, `>`, `tee`, `patch`, `git apply`, `python -c`...) + gọi thẳng `aider`/`gemini`/`codex` (bypass wrapper). |
+
+- **Discriminator** main vs subagent: field `agent_id` (chỉ có ở subagent). Subagent execute core → allow (đó là việc của nó).
+- **Escape hatch** size-S 1-line thật (Edit + Bash-write): `ORCHESTRATOR_GATE_BYPASS=1` → allow + audit log. KHÔNG áp cho direct-CLI và risk-path (security boundary, không phải convenience).
+- **Threat model**: chống Opus lười/nhầm vô ý, KHÔNG chống adversary (command-string heuristic, chuỗi obfuscate lách được — nhưng Opus không phải kẻ tấn công).
+- **Risk-path** (auth/payment/wallet/...): project khai báo `env.HARNESS_RISK_DIRS` trong `.claude/settings.json` — đọc runtime, sửa 1 dòng JSON hiệu lực ngay, không re-run installer. Opus vẫn phải chọn đúng persona (Codex/Sonnet) ngay từ đầu cho domain nhạy cảm — hook chỉ là lưới cuối, bị chặn giữa chừng vẫn tốn 1 vòng gọi.
+
+Hook = enforcement chính của ranh giới size-S, KHÔNG chỉ advisory. Fail-open khi thiếu jq / payload không JSON (nhất quán mọi gate). Off-switch: `HARNESS_DELEGATE=0`.
 
 Nguyên tắc L/XL vs hard-reasoning-code: task cần suy luận sâu (bug khó, algo, security, invariant tinh vi) → route thẳng **Codex trước**, không qua Sonnet. Task L/XL thường (spec rõ, implement/refactor bình thường) → **Sonnet trước**, Codex chỉ fallback khi Sonnet không xử lý được. Cả hai đều **không phải Opus tự ôm**. M-mechanical ưu tiên DeepSeek trước (rẻ hơn), chỉ fallback Sonnet khi DeepSeek fail.
 

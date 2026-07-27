@@ -18,9 +18,11 @@ Opus = pure orchestrator. Trước MỖI execution: tuyên bố [nhãn] → targ
   • [M mechanical] → delegate-deepseek   • [read-only] → delegate-gemini
   • [L/XL execute] → delegate-sonnet (fb: delegate-codex)
 
-HARD GATE: main-agent Edit/Write vào @@CORE_DIRS_HUMAN@@ bị chặn (exit 2).
-  Subagent edit OK. Size-S 1-line thật → ORCHESTRATOR_GATE_BYPASS=1.
-  Hook: .claude/hooks/pre-edit-orchestrator-gate.sh
+HARD GATE (2 mặt — Edit/Write VÀ Bash):
+  • Edit/Write vào @@CORE_DIRS_HUMAN@@ → chặn (pre-edit-orchestrator-gate.sh)
+  • Bash-write core (sed -i / > / tee / patch / python -c) → chặn
+  • Gọi thẳng aider/gemini/codex qua Bash → chặn, KHÔNG bypass (pre-bash-orchestrator-gate.sh)
+  Subagent edit OK. Size-S 1-line thật (edit+bash-write) → ORCHESTRATOR_GATE_BYPASS=1.
 
 ═══════════════════════════════════════════════════════════════════════════
 📊 Context-Window Budget Rule (nếu đã cài check-session-limit.sh — optional group)
