@@ -65,6 +65,24 @@ những thứ như URL nội bộ và file bị include nhầm, không phải "s
 hình. Nếu tìm thấy gì đáng ngại, DỪNG và mô tả nó — không tự
 quyết định đơn phương là ổn.
 
+## 3.5. README drift check (nếu repo có README ở root)
+
+Chỉ chạy khi diff sắp push (bước 3) chạm tới thứ README mô tả:
+CLI flag/command name, install/setup step, usage example, config key,
+env var, hoặc public API. Diff chỉ đụng internal (test, refactor, comment)
+mà không đổi behavior user-facing → SKIP bước này.
+
+Nếu có: đọc README root, đối chiếu với thay đổi thật trong diff. Tìm:
+
+- Command/flag đã đổi tên/xoá nhưng README còn ghi cũ
+- Install/setup step lệch với script thực tế
+- Usage example dùng syntax không còn đúng
+- Env var / config key đã rename mà README chưa cập nhật
+
+Lệch → DỪNG, báo user chính xác dòng nào sai + sửa đề xuất. KHÔNG tự
+push với README stale (user cài theo hướng dẫn sai → lỗi thật). User
+xác nhận sửa README (cùng commit hoặc commit riêng) rồi mới push.
+
 ## 4. Push
 
 Chỉ khi bước 1-3 đều pass: hiện cho user chính xác cái gì sắp được push
