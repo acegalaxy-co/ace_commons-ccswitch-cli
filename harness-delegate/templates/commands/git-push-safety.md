@@ -44,7 +44,11 @@ là quyết định họ tự làm thủ công, không phải command tự quy�
 
 ## 3. Sensitive-content scan
 
-Chạy `git status` và `git diff --stat` (so với branch upstream/main, hoặc
+Trước tiên invoke skill `/check-hardcode` (quét rộng: IP/domain/email/generic
+hardcode mà hook auto-block cố ý bỏ qua vì false-positive). Nếu skill report
+finding đáng ngại, DỪNG — không tiếp tục sang phán đoán thủ công bên dưới.
+
+Rồi chạy `git status` và `git diff --stat` (so với branch upstream/main, hoặc
 `HEAD` nếu có thay đổi chưa commit) để xem mọi thứ sắp được push. Rồi
 đọc qua các file đã đổi thật và check:
 
@@ -65,6 +69,11 @@ quyết định đơn phương là ổn.
 
 Chỉ khi bước 1-3 đều pass: hiện cho user chính xác cái gì sắp được push
 (`git status`, branch hiện tại, remote) và hỏi xác nhận rõ ràng
-trước khi chạy `git push`. Không bao giờ force-push như một phần của command
+trước khi push. Không bao giờ force-push như một phần của command
 này trừ khi request của user trong conversation này yêu cầu rõ ràng force
 push.
+
+Push với prefix `GIT_PUSH_GATE_OK=1 git push ...` — token này báo cho hook
+`pre-bash-git-push-gate.sh` biết pipeline an toàn đã chạy xong. Raw `git push`
+(không prefix) sẽ bị hook chặn. Chỉ thêm token SAU khi bước 1-3 pass và user
+đã confirm ở trên — không bao giờ prefix sẵn để lách gate.
