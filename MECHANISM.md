@@ -2,7 +2,7 @@
 
 > Tài liệu kỹ thuật đầy đủ cho team dev. README.md là quickstart cho người dùng cuối; file này giải thích **cơ chế bên trong**, **auto-switch**, **giới hạn**, và **cách test**.
 >
-> **Last updated:** 2026-07-18
+> **Last updated:** 2026-07-27
 
 ---
 
@@ -10,19 +10,23 @@
 
 CLI đổi endpoint auth của **Claude Code** giữa nhiều "profile" — chỉ thay block `env` trong `settings.json`, giữ nguyên phần còn lại (hooks, permissions, statusLine…).
 
-4 target (theo thứ tự ưu tiên fallback):
+5 target (theo thứ tự ưu tiên fallback):
 
 | Target | Cơ chế | Vai trò |
 |---|---|---|
 | `claude` | `env` = base 9router + token + model `cc/*` | ⭐ DEFAULT — claude qua remote router |
 | `codex` | cùng base 9router + **cùng token** + model `cx/*` | Codex/GPT qua 9router |
 | `deepseek` | cùng base 9router + **cùng token** + model `ds/*` | DeepSeek qua 9router |
-| `kimi` | local adapter `http://127.0.0.1:20129/v1` + Kimi key riêng + model `kimi-k3` | Kimi API local-only |
+| `kimi` | cùng base 9router + **cùng token** + model `kimi/*` | Kimi qua 9router |
 | `subscription` | **gỡ block `env`** khỏi `settings.json` | Safe-harbor fallback (cuối cùng) — Claude Code dùng OAuth subscription login, **không cần key** |
 
-`claude` / `codex` / `deepseek` dùng **CÙNG base URL** `https://proxy.example.com/v1` qua 9router **và CÙNG 1 token** (điền giống nhau vào cả 3 profile); chỉ khác block `ANTHROPIC_DEFAULT_*_MODEL` (prefix `cc/` vs `cx/` vs `ds/`). `kimi` đi qua adapter local `ai-proxy/kimi-anthropic-adapter.py`, gọi upstream OpenAI-compatible `https://api.moonshot.ai/v1/chat/completions` với model `kimi-k3`. Vì chung 1 router, router chết = cả 3 chết → fallback duy nhất là `subscription`.
+`claude` / `codex` / `deepseek` / `kimi` dùng **CÙNG base URL** `https://9router.proxy.example.com/v1` qua 9router **và CÙNG 1 token** (điền giống nhau vào cả 4 profile); chỉ khác block `ANTHROPIC_DEFAULT_*_MODEL` (prefix `cc/` vs `cx/` vs `ds/` vs `kimi/`). Vì chung 1 router, router chết = cả 4 chết → fallback duy nhất là `subscription`.
 
-> **Phân biệt target:** URL 3 profile giống nhau nên `current()`/hook không đọc URL để nhận diện — đọc **model prefix** (`.env.ANTHROPIC_DEFAULT_OPUS_MODEL` trong settings.json): `cx/*`=codex, `ds/*`=deepseek, `cc/*`=claude.
+> **Kimi direct-endpoint mode (phụ):** khi `.env` có `kimi_api_key_force_subscription=1` + `kimi_api_key`, `setup` ghi `kimi.json` trỏ thẳng endpoint Anthropic-compatible của Kimi `https://api.moonshot.ai/anthropic` (key Kimi riêng, bypass 9router). `ccswitch.sh` xử riêng case `*moonshot.ai*` cho URL `/models` và `/v1/messages` khi probe. Mặc định (`=0`) → kimi đi qua 9router như 3 target còn lại.
+
+Phân biệt các target khi cùng base URL:
+
+> **Phân biệt target:** URL các profile giống nhau nên `current()`/hook không đọc URL để nhận diện — đọc **model prefix** (`.env.ANTHROPIC_DEFAULT_OPUS_MODEL` trong settings.json): `cx/*`=codex, `ds/*`=deepseek, `kimi/*`=kimi, `cc/*`=claude.
 
 `subscription` KHÔNG phải profile file — nó là *sự vắng mặt* của block `env`. Không có URL để probe, không có key; là terminal luôn về được. Alias tương thích ngược: `original` / `direct` / `clear` → `subscription`.
 
@@ -56,51 +60,48 @@ ccswitch-cli-claude/
 ├── README.md                    # quickstart người dùng
 ├── MECHANISM.md                 # tài liệu này (dev handoff)
 ├── install-9router-proxy.sh     # entry point Phần 1, tự detect OS
-├── install-claude-memory.sh     # entry point Phần 2, tự detect OS
-├── install-git-hooks.sh         # entry point Phần 3
-├── install-harness-delegate.sh  # entry point Phần 4 — thin wrapper, exec harness-delegate/install.sh
-├── install-auto-compact.sh      # chỉnh autoCompactWindow / DISABLE_AUTO_COMPACT trong settings.json (đứng riêng, không thuộc phần nào)
+├── install-harness-delegate.sh  # entry point Phần 2 — thin wrapper, exec harness-delegate/install.sh
+├── install-auto-compact.sh      # Phần 3 — chỉnh autoCompactWindow / DISABLE_AUTO_COMPACT trong settings.json (đứng riêng)
+├── install-optimize-claude.sh   # Phần 4 — disableWorkflows từ .env, ghi settings.json (đứng riêng)
 ├── ai-proxy/
 │   ├── ccswitch.sh            # CLI mac/linux — target ~/.claude/settings.json
 │   ├── ccswitch.ps1           # CLI windows (PowerShell) — parity với .sh
 │   ├── setup.sh               # installer mac/linux
 │   ├── setup.ps1              # installer windows
 │   ├── statusline-context.sh  # statusLine script hiển thị context-window usage
-│   ├── kimi-anthropic-adapter.py  # adapter Anthropic Messages -> Kimi OpenAI-compatible
+│   ├── kimi-anthropic-adapter.py  # adapter local (chỉ dùng cho direct-endpoint mode nếu cần; mặc định kimi đi qua 9router)
 │   ├── hooks/
 │   │   └── check-router.sh    # SessionStart hook: probe + AUTO-SWITCH khi down
 │   └── profiles/              # TEMPLATE placeholder key (an toàn commit)
 │       ├── claude.json       # claude cc/*
 │       ├── codex.json        # codex cx/*  (cùng key với claude.json)
 │       ├── deepseek.json     # deepseek ds/*  (cùng key với claude.json)
-│       └── kimi.json         # kimi-k3 qua local adapter (key riêng; subscription không có file — env-clear)
-├── ai-memory-rules/
-│   ├── setup-rules.sh / setup-rules.ps1  # installer Phần 2
-│   └── rules/*.md                         # 8 rule cá nhân, copy nguyên văn
-├── dev-hooks/
-│   └── git-hooks/pre-push     # gitleaks scan trước push (Phần 3)
-├── harness-delegate/           # Phần 4 — cài orchestrator+delegate mechanism vào project KHÁC
+│       └── kimi.json         # kimi kimi/*  (cùng key; direct-endpoint mode nếu force-subscription)
+│                              # subscription không có file — env-clear
+├── harness-delegate/           # Phần 2 — cài orchestrator+delegate mechanism vào project KHÁC
 │   ├── install.sh              # installer thật (install-harness-delegate.sh chỉ exec file này)
 │   └── templates/              # nguồn @@TOKEN@@ template, copy+substitute vào project đích
 │       ├── agents/delegate-{codex,deepseek,gemini,sonnet}.md
-│       ├── hooks/{pre-edit-orchestrator-gate,pre-edit-secret-scan,post-edit-syntax-check,session-start-banner,check-session-limit}.sh
-│       ├── scripts/delegate/{_common,run-aider-deepseek,run-codex,run-gemini,doctor}.sh
-│       ├── commands/{push-to-git,conventional-commit,branch-cleanup,pr-describe,dep-audit,loop-feature,lazy-load-audit,audit-memory-harness}.md
-│       ├── skills/{lazy-load-health,dep-ladder-check,fix-ledger}/SKILL.md
-│       └── rules/{git-workflow,skill-superpowers}.md
-├── scripts/delegate/            # bản wrapper THẬT dùng trong repo này (đồng bộ nội dung với harness-delegate/templates/scripts/delegate/, xem §sync)
+│       ├── hooks/{pre-edit-orchestrator-gate,pre-bash-orchestrator-gate,pre-edit-secret-scan,post-edit-syntax-check,session-start-banner,check-session-limit}.sh
+│       ├── scripts/delegate/{_common,run-aider-deepseek,run-codex,run-gemini,doctor}.sh + lib/
+│       ├── commands/*.md                 # 12 slash command
+│       ├── skills/{lazy-load-health,dep-ladder-check,auto-commit,check-hardcode,audit-git-leak,fix-ledger}/SKILL.md
+│       ├── rules/{common,project}/*.md   # common (8 guardrail) + project (git-workflow, skill-superpowers)
+│       └── git-hooks/pre-push            # gitleaks scan trước push (cài vào .git/hooks/ project đích)
+├── scripts/delegate/            # bản wrapper THẬT dùng trong repo này (đồng bộ nội dung với harness-delegate/templates/scripts/delegate/)
 │   ├── _common.sh               # source chung: resolve API key theo thứ tự DEEPSEEK_API_KEY → PROXY_DEEPSEEK_API_KEY → deepseek_api_key
 │   ├── run-aider-deepseek.sh    # Aider + DeepSeek, worktree isolation, --no-auto-commits
 │   ├── run-codex.sh             # Codex CLI (o-series) wrapper
-│   ├── run-gemini.sh            # Gemini CLI wrapper — model hardcode gemini-3.5-flash, gọi thẳng CLI (không probe, không account rotation)
-│   └── doctor.sh                # preflight check: CLI cài chưa, git repo chưa, env key resolve chưa — không sửa gì
-├── .claude/
-│   ├── agents/delegate-{codex,deepseek,gemini,sonnet}.md  # persona cho 4 delegate subagent (bản dùng trong repo này)
-│   ├── hooks/*.sh               # 5 hook: orchestrator-gate, secret-scan, syntax-check, session-banner, session-limit
-│   ├── commands/push-to-git.md
-│   ├── skills/{loop-feature,sync-harness-rules}/SKILL.md
-│   └── rules/{git-workflow,skill-superpowers}.md  # rule riêng cho repo này (khác ai-memory-rules/ — đó là rule copy sang máy user)
-└── test/                        # 12 file bats, 170 test — xem §8
+│   ├── run-gemini.sh            # Gemini CLI wrapper — gọi thẳng CLI (không probe, không account rotation)
+│   ├── doctor.sh                # preflight check: CLI cài chưa, git repo chưa, env key resolve chưa — không sửa gì
+│   └── lib/                     # python sitecustomize helper dùng chung
+├── .claude/                     # harness bản THẬT của repo này (đồng bộ với harness-delegate/templates/)
+│   ├── agents/delegate-{codex,deepseek,gemini,sonnet}.md  # persona 4 delegate subagent
+│   ├── hooks/*.sh               # 6 hook: pre-edit-gate, pre-bash-gate, secret-scan, syntax-check, session-banner, session-limit
+│   ├── commands/*.md            # 12 slash command
+│   ├── skills/{lazy-load-health,dep-ladder-check,auto-commit,check-hardcode,audit-git-leak,fix-ledger}/SKILL.md
+│   └── rules/{common,project}/*.md  # common (8 guardrail overwrite khi re-sync) + project (giữ nguyên)
+└── test/                        # 9 file bats, 130 test — xem §8
 ```
 
 Sau `setup.sh`, các file được cài vào `~/.claude/`:
@@ -122,10 +123,11 @@ ccswitch              # effective source (tầng nào đang thắng §2, tag the
 ccswitch claude       # switch → Claude qua 9router (cc/*)
 ccswitch codex        # switch → Codex/GPT qua 9router (cx/*)
 ccswitch deepseek     # switch → DeepSeek qua 9router (ds/*)
+ccswitch kimi         # switch → Kimi qua 9router (kimi/*)
 ccswitch subscription # gỡ block env → Claude Code OAuth subscription login
-ccswitch check        # probe health cả 3 profile + verify subscription
+ccswitch check        # probe health các profile (claude/codex/deepseek/kimi) + verify subscription
 ccswitch fallback     # giữ target đang active nếu router healthy; router chết → subscription (safe-harbor)
-ccswitch set-key [p]  # nhập key mới (ẩn) cho profile p (mặc định claude; claude/codex/deepseek share CHUNG 1 token — chạy set-key lại cho các target còn lại với CÙNG giá trị nếu cần re-sync) rồi apply
+ccswitch set-key [p]  # nhập key mới (ẩn) cho profile p (mặc định claude; claude/codex/deepseek/kimi share CHUNG 1 token — chạy set-key lại cho các target còn lại với CÙNG giá trị, hoặc dùng `ccswitch update` để sync) rồi apply
 ccswitch update [src] # đồng bộ ANTHROPIC_BASE_URL + ANTHROPIC_AUTH_TOKEN từ profile src (mặc định claude)
                        #   sang các profile còn lại trong ORDER — hỏi [y/N] trước khi ghi đè TỪNG file;
                        #   chỉ copy 2 field host/key, KHÔNG đụng ANTHROPIC_DEFAULT_*_MODEL (giữ prefix riêng)
@@ -151,7 +153,7 @@ Hook `hooks/check-router.sh` chạy ở sự kiện **SessionStart** (đã wire 
 
 ```
 ━━━ ccswitch ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-▶ Endpoint đang chạy: claude (via 9router)  (https://proxy.example.com/v1)
+▶ Endpoint đang chạy: claude (via 9router)  (https://9router.proxy.example.com/v1)
   Fallback (khi router chết): claude/codex/deepseek → subscription (OAuth)
     • subscription = safe-harbor: gỡ env → Claude Code dùng OAuth login (luôn về được)
   Lệnh: ccswitch [check | claude | codex | deepseek | subscription | fallback | clear]
@@ -207,7 +209,7 @@ export CCSWITCH_NO_AUTO=1
 Thứ tự: **router hiện tại (claude/codex/deepseek) → subscription**.
 
 - **router (claude/codex/deepseek)**: giữ target đang active nếu probe **200** (fallback không ép về claude khi bạn đang ở codex/deepseek).
-- **`subscription` = SAFE-HARBOR cuối cùng**: nếu router chết, `fallback` **luôn apply `subscription`** = gỡ block `env` khỏi `settings.json`. Không probe, không cần key. Claude Code quay về **OAuth subscription login gốc** → luôn về được, không bao giờ kẹt trên router chết. (3 target chung 1 router 9router → router chết là cả 3 chết.)
+- **`subscription` = SAFE-HARBOR cuối cùng**: nếu router chết, `fallback` **luôn apply `subscription`** = gỡ block `env` khỏi `settings.json`. Không probe, không cần key. Claude Code quay về **OAuth subscription login gốc** → luôn về được, không bao giờ kẹt trên router chết. (4 target chung 1 router 9router → router chết là cả 4 chết.)
 
 - ✅ Đã test (xem §8): fallback bỏ qua router chết rồi gỡ env block; `settings.json` không còn `.env` → Claude Code dùng subscription.
 
@@ -249,7 +251,7 @@ Terminal 3: claude-ds   (spawn deepseek) → process env ds/*  → DeepSeek  }
 - Binary resolve qua `command -v claude` (fallback `~/.local/bin/claude`) — **không** dựa alias `claude` (user có thể có alias cũ bị override).
 - Alias tiện: `setup` tạo `claude-cc` / `claude-cx` / `claude-ds` (short-name cc/cx/ds).
 
-⚠️ **Quota chung.** 3 target = 1 account 9router = **1 quota**. Song song 3 = đốt nhanh ~3×. Chung 1 token, KHÔNG tách quota (1 email = 1 quota). Tách thật cần account 9router khác email — ngoài phạm vi ccswitch.
+⚠️ **Quota chung.** 4 target = 1 account 9router = **1 quota**. Song song 4 = đốt nhanh ~4×. Chung 1 token, KHÔNG tách quota (1 email = 1 quota). Tách thật cần account 9router khác email — ngoài phạm vi ccswitch.
 
 ---
 
@@ -270,15 +272,15 @@ Yêu cầu: `jq` + `curl` (`brew install jq` / `apt install -y jq curl`).
 **Điền key nhanh qua `.env`** (gitignored, ở repo root):
 
 ```bash
-proxy_host=https://proxy.example.com/v1
+proxy_host=https://9router.proxy.example.com/v1
 proxy_key=<your-9router-key>
 
-# optional: Kimi direct-endpoint mode (bypass local adapter)
+# optional: Kimi direct-endpoint mode (bypass 9router, hit api.moonshot.ai)
 kimi_api_key_force_subscription=1
 kimi_api_key=<your-kimi-key>
 ```
 
-Nếu file có đủ cả 2 biến, `setup.sh`/`setup.ps1` hỏi `[Y/n]` — **Enter hoặc y (mặc định) = áp cả `proxy_host` lẫn `proxy_key` vào cả 3 profile** (`claude`/`codex`/`deepseek`); `n` → rơi về flow nhập tay (hỏi base URL rồi hỏi key). Non-interactive cũng mặc định Yes, **trừ khi** một profile đã có key thật (giữ nguyên, không ghi đè âm thầm ngoài TTY). Thiếu 1 trong 2 biến → bỏ qua, coi như không có `.env`.
+Nếu file có đủ cả 2 biến, `setup.sh`/`setup.ps1` **ghi thẳng** cả `proxy_host` lẫn `proxy_key` vào cả 4 profile (`claude`/`codex`/`deepseek`/`kimi`) — không hỏi, `.env` là source of truth (ghi đè cả profile đã có key thật, in thông báo overwrite). Nếu `kimi_api_key_force_subscription=1` + `kimi_api_key` có mặt → `kimi.json` ghi riêng endpoint Kimi thật thay vì 9router. Thiếu 1 trong 2 biến `proxy_*` → bỏ qua, coi như không có `.env`.
 
 ### Windows (PowerShell)
 
@@ -361,7 +363,7 @@ HOME="$T" bash "$T/.claude/ccswitch.sh" deepseek >/dev/null
 jq -e '.env.ANTHROPIC_DEFAULT_OPUS_MODEL | startswith("ds/")' "$T/.claude/settings.json" >/dev/null && echo "PASS: deepseek applied (ds/*)"
 ```
 
-Kết quả mong đợi: 5 dòng PASS. Xác nhận target phân biệt bằng model prefix, không phải URL (3 profile chung base 9router).
+Kết quả mong đợi: 5 dòng PASS. Xác nhận target phân biệt bằng model prefix, không phải URL (các profile chung base 9router).
 
 ### 8.6 `spawn` — export đúng model prefix + KHÔNG đụng settings.json
 
@@ -394,7 +396,7 @@ Kết quả mong đợi: 3 dòng PASS. `spawn` chỉ tác động process env, g
 
 Covered bởi `test/setup-env-pro.bats` (7 test, chạy trên repo được stage vào thư mục tạm với `.env` giả — không bao giờ đụng `.env` thật của máy): áp mặc định Yes (interactive Enter + non-interactive), bỏ qua khi thiếu `proxy_host`/`proxy_key`, bỏ qua khi thiếu file, **không ghi đè** khi 1 profile đã có key thật, và trả lời `n` rơi đúng về flow nhập tay (host rồi key).
 
-### 8.8 Toàn bộ bats suite — 132 test / 10 file
+### 8.8 Toàn bộ bats suite — 130 test / 9 file
 
 ```bash
 bats test/*.bats
@@ -402,15 +404,14 @@ bats test/*.bats
 
 | File | # test | Phủ |
 |---|---|---|
-| `ccswitch.bats` | 19 | `ccswitch.sh` — apply/status/spawn/set-key, model prefix per target |
-| `delegate-scripts.bats` | 18 | `scripts/delegate/*.sh` — key resolution order, worktree isolation, `--no-auto-commits` |
+| `ccswitch.bats` | 22 | `ccswitch.sh` — apply/status/spawn/set-key/update, model prefix per target |
+| `delegate-scripts.bats` | 19 | `scripts/delegate/*.sh` — key resolution order, worktree isolation, `--no-auto-commits` |
 | `doctor.bats` | 4 | `scripts/delegate/doctor.sh` — preflight check: CLI present, git repo, env key resolve, không leak secret value |
 | `install-auto-compact.bats` | 32 | `install-auto-compact.sh` — `set`/`auto`/`off`/`on`/`status`, `--global`/`--project`, validate `jq`, tạo file + giữ JSON toàn vẹn |
-| `install-git-hooks.bats` | 4 | `install-git-hooks.sh` — dispatch OS + advisory khi thiếu `gitleaks` |
-| `install-harness-delegate.bats` | 3 | `harness-delegate/install.sh` — cài đủ 3 nhóm mặc định, idempotent khi chạy lại 2 lần (không tạo hook trùng trong `settings.json`) |
-| `install-wrappers.bats` | 6 | `install-9router-proxy.sh` / `install-claude-memory.sh` — dispatch logic theo `$OSTYPE`, lỗi rõ khi thiếu `cygpath` trên `msys` |
-| `setup-env-pro.bats` | 7 | xem §8.7 |
-| `setup-rules.bats` | 10 | `setup-rules.sh` — copy mode, ghi đè symlink lạ, mirror xoá rule không còn trong repo, idempotent |
+| `install-harness-delegate.bats` | 6 | `harness-delegate/install.sh` — cài đủ nhóm mặc định, idempotent khi chạy lại 2 lần (không tạo hook trùng trong `settings.json`) |
+| `install-wrappers.bats` | 4 | `install-9router-proxy.sh` — dispatch logic theo `$OSTYPE`, lỗi rõ khi thiếu `cygpath` trên `msys` |
+| `setup-env-pro.bats` | 9 | xem §8.7 |
+| `setup-ps1-parity.bats` | 5 | `ai-proxy/setup.ps1` — parity `.env` apply + wire settings/statusLine (skip nếu máy không có `pwsh`) |
 | `statusline-context.bats` | 29 | `ai-proxy/statusline-context.sh` — JSON stdin → progress bar + %, làm tròn token, màu theo ngưỡng, default khi thiếu field |
 
 Không có test nào đụng `$HOME` hay `.claude/` thật của máy chạy CI/dev — tất cả sandbox qua `$BATS_TEST_TMPDIR`.
@@ -442,6 +443,7 @@ Không có test nào đụng `$HOME` hay `.claude/` thật của máy chạy CI/
 
 ## 11. Changelog
 
+- **2026-07-27** — **Đồng bộ README + MECHANISM với state hiện tại + `kimi` 9router-native.** (1) `kimi` giờ là router-target thứ 4 chung base 9router + chung token (`ORDER=(claude codex deepseek kimi)`, model prefix `kimi/*`), bỏ local adapter làm default — direct-endpoint mode (`api.moonshot.ai/anthropic`) còn lại như optional qua `.env` `kimi_api_key_force_subscription=1` (refactor d8f30a4). Docs cập nhật: 5 target (4 router + subscription), 4 profile, `claude-km` spawn alias, bảng model prefix `cc/`/`cx/`/`ds/`/`kimi/`. (2) README restructure 5-part → 4-part: ccswitch endpoint switcher / harness-delegate / auto-compact-window / optimize-claude; gỡ 2 phần cũ (`install-claude-memory.sh`+`ai-memory-rules/`, `install-git-hooks.sh`+`dev-hooks/`) — đã fold vào harness-delegate group RULES + GITHOOKS. (3) MECHANISM §3 file tree viết lại: 4 install script, harness-delegate templates, `.claude/` 6 hook/12 command/6 skill; §8.8 bats table đồng bộ counts thật **130 test / 9 file**. Files: `README.md` + `MECHANISM.md` (docs-only, không đụng code). Verify: `grep -c '^@test' test/*.bats` = 130/9, hostname canonical `9router.proxy.example.com` khớp `ai-proxy/ccswitch.sh`.
 - **2026-07-22** — **Fix `setup.ps1` — 3 bug parity vs `setup.sh` chặn cài đặt Windows non-interactive.** (1) `[Environment]::UserInteractive` luôn trả `True` kể cả khi stdin bị pipe/redirect (verified thật qua `pwsh`) → script tưởng nhầm session tương tác, gọi `Read-Host -AsSecureString` treo vô thời hạn dưới piped stdin, không bao giờ tới đoạn wire settings.json/statusLine/đăng ký PowerShell profile function. Đổi sang `[Console]::IsInputRedirected` (đúng: `True` khi non-interactive). (2) Xoá code set `.model = "sonnet"` (dòng 186-195 cũ) — tái lập bug cũ đã cố ý bỏ ở `setup.sh` (stale model pin sau khi đổi endpoint), thay bằng comment parity giống hệt bash. (3) `.env` proxy flow lỗi thời — `.ps1` vẫn hỏi `[Y/n]` khi có đủ `proxy_host`+`proxy_key`, trong khi `setup.sh` đã đổi sang unconditional-apply (không hỏi, `.env` luôn là source of truth) từ trước — đồng bộ lại logic. Files: `ai-proxy/setup.ps1` + `test/setup-ps1-parity.bats` (4 test mới, skip nếu máy không có `pwsh`). Verify: `bats test/*.bats` (137/137 pass).
 - **2026-07-22** — **Xoá `gemini-account.sh` — bỏ account rotation, gọi thẳng CLI.** Sau khi hardcode model vẫn còn hiện tượng "vẫn chậm?" (16s vs >2 phút giữa 2 lần gọi liên tiếp) — root cause thật: rotation-on-failure quét tuần tự tới 6 account (`~/.gemini/accounts/config.json` priority list), mỗi account retry lại pay full CLI cold-start (~15-60s), quota/error ở account đầu kéo theo 5 cold-start nữa trước khi thành công/fail hẳn. User yêu cầu xoá hẳn account script (không chỉ pin 1 account) — `run-gemini.sh` gọi thẳng `gemini` CLI, dùng nguyên OAuth cred đang active trong `~/.gemini/oauth_creds.json`, không còn switch/rotate account nào. Xoá `gemini-account.sh` (2 bản) + `test/gemini-account.bats` (19 test) + mọi reference (`install.sh`, README, MECHANISM). Bats suite còn 132 test / 10 file (từ 151/11). Files: `scripts/delegate/run-gemini.sh` + xoá `scripts/delegate/gemini-account.sh` + `harness-delegate/templates/scripts/delegate/gemini-account.sh` + `test/gemini-account.bats` + `harness-delegate/install.sh` + README.md + MECHANISM.md. Verify: `bats test/*.bats` (132/132 pass).
 - **2026-07-22** — **Xoá `probe-gemini-highest.sh` — cold-start bottleneck.** Probe loop tuần tự qua 8 candidate model, mỗi candidate spawn 1 lần CLI cold-start thật (~15-60s/lần) để tìm model "cao nhất" còn quota — cold cache khiến 1 lần delegate call tốn tới ~4 phút (đo thật: `time bash probe-gemini-highest.sh --force` = 3:55). Xoá hẳn script + test (`probe-gemini-highest.bats`, 19 test) + mọi reference (`install.sh`, README, MECHANISM). `run-gemini.sh` hardcode `GEMINI_MODEL` default = `gemini-3.5-flash` (chọn theo yêu cầu user, không phụ thuộc probe/cache), override per-call vẫn qua `GEMINI_MODEL=<id>`. Files: `scripts/delegate/run-gemini.sh` + xoá `scripts/delegate/probe-gemini-highest.sh` + `harness-delegate/templates/scripts/delegate/probe-gemini-highest.sh` + `test/probe-gemini-highest.bats` + `harness-delegate/install.sh` + README.md + MECHANISM.md. Verify: `bats test/delegate-scripts.bats`.
