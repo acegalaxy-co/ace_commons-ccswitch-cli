@@ -4,7 +4,8 @@ description: Dev-methodology chắt từ obra/superpowers — 4-phase debugging,
 status: live
 updated: 2026-07-19
 paths:
-  - "src/**"
+  - "*.sh"
+  - "scripts/**"
 metadata:
   type: reference
 ---

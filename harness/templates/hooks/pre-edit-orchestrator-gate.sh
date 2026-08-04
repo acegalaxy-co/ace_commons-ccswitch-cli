@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse hook (matcher: Edit|Write|MultiEdit|NotebookEdit).
 # Orchestrator gate: chặn MAIN agent (orchestrator — mọi model) tự Edit/Write file source core.
-# Ép execution route qua delegate subagent (per .claude/rules/orchestrator.md).
+# Ép execution route qua delegate subagent (per .claude/rules/common/orchestrator.md).
 #
 # Ranh giới (path-coarse, không đoán size — nghi ngờ → chặn):
 #   - Chặn khi: caller = MAIN agent  VÀ  file_path thuộc core source dirs (@@CORE_DIRS_HUMAN@@)
@@ -158,7 +158,16 @@ if [ "${ORCHESTRATOR_GATE_BYPASS:-}" = "1" ]; then
   exit 0
 fi
 
-# 3) Chỉ gate file source core. Path khác (.claude/, docs/, tests/, config) → allow.
+# 3) Allow-list trước — harness surface (.claude/), test/, harness/ luôn cho
+#    main agent sửa trực tiếp (không phải "source core" cần delegate).
+case "$file_path" in
+  */.claude/*|.claude/*|*/test/*|test/*|*/harness/*|harness/*)
+    exit 0
+    ;;
+esac
+
+# 4) Chỉ gate file source core (@@CORE_DIRS_HUMAN@@). Path khác (docs/, config)
+#    → allow (rơi qua case dưới, fall-through exit 0 cuối file).
 #    Match cả absolute path lẫn repo-relative.
 case "$file_path" in
   @@CORE_DIRS_CASE@@)
@@ -167,7 +176,7 @@ case "$file_path" in
 🚦 orchestrator-gate: MAIN agent (orchestrator — mọi model) KHÔNG tự Edit/Write vào source core.
    File: $file_path
 
-   Rule: .claude/rules/orchestrator.md — Opus = pure orchestrator.
+   Rule: .claude/rules/common/orchestrator.md — Opus = pure orchestrator.
    Execution (edit @@CORE_DIRS_HUMAN@@) PHẢI route qua delegate subagent:
      • L/XL algo / refactor / fix sau chẩn đoán → delegate-sonnet (fb: delegate-codex)
      • M mechanical / batch edit / boilerplate   → delegate-deepseek

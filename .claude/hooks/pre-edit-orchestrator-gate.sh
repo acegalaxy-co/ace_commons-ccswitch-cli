@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # PreToolUse hook (matcher: Edit|Write|MultiEdit|NotebookEdit).
 # Orchestrator gate: chặn MAIN agent (orchestrator — mọi model) tự Edit/Write file source core.
-# Ép execution route qua delegate subagent (per .claude/rules/orchestrator.md).
+# Ép execution route qua delegate subagent (per .claude/rules/common/orchestrator.md).
 #
 # Ranh giới (path-coarse, không đoán size — nghi ngờ → chặn):
-#   - Chặn khi: caller = MAIN agent  VÀ  file_path thuộc core source dirs (src/)
+#   - Chặn khi: caller = MAIN agent  VÀ  file_path thuộc core source dirs (scripts/, *.sh root)
 #   - Cho phép: mọi tool call từ SUBAGENT (delegate-sonnet/deepseek/... edit thẳng OK)
 #   - Cho phép: main agent sửa .claude/, docs/, tests/, config root (size-S exception)
 #   - Chặn LUÔN (kể cả từ subagent): risk-path denylist bên dưới.
@@ -158,17 +158,26 @@ if [ "${ORCHESTRATOR_GATE_BYPASS:-}" = "1" ]; then
   exit 0
 fi
 
-# 3) Chỉ gate file source core. Path khác (.claude/, docs/, tests/, config) → allow.
+# 3) Allow-list trước — harness surface (.claude/), test/, harness/ luôn cho
+#    main agent sửa trực tiếp (không phải "source core" cần delegate).
+case "$file_path" in
+  */.claude/*|.claude/*|*/test/*|test/*|*/harness/*|harness/*)
+    exit 0
+    ;;
+esac
+
+# 4) Chỉ gate file source core (scripts/, *.sh root). Path khác (docs/, config)
+#    → allow (rơi qua case dưới, fall-through exit 0 cuối file).
 #    Match cả absolute path lẫn repo-relative.
 case "$file_path" in
-  */src/*|src/*)
+  */scripts/*|scripts/*|*.sh)
     echo "$(ts) BLOCK main-agent edit → $file_path" >> "$LOG" 2>/dev/null || true
     cat >&2 << EOF
 🚦 orchestrator-gate: MAIN agent (orchestrator — mọi model) KHÔNG tự Edit/Write vào source core.
    File: $file_path
 
-   Rule: .claude/rules/orchestrator.md — Opus = pure orchestrator.
-   Execution (edit src/) PHẢI route qua delegate subagent:
+   Rule: .claude/rules/common/orchestrator.md — Opus = pure orchestrator.
+   Execution (edit scripts/, *.sh) PHẢI route qua delegate subagent:
      • L/XL algo / refactor / fix sau chẩn đoán → delegate-sonnet (fb: delegate-codex)
      • M mechanical / batch edit / boilerplate   → delegate-deepseek
      • read-only audit / cross-file / grep rộng  → delegate-gemini

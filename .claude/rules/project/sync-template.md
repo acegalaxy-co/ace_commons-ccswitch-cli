@@ -4,7 +4,11 @@ description: Sửa xong bất kỳ harness surface LIVE (.claude/ + scripts/dele
 status: live
 updated: 2026-07-27
 paths:
-  - ".claude/**"
+  - ".claude/hooks/**"
+  - ".claude/agents/**"
+  - ".claude/commands/**"
+  - ".claude/skills/**"
+  - ".claude/rules/**"
   - "harness/**"
   - "scripts/delegate/**"
 metadata:
