@@ -131,6 +131,8 @@ Khi main agent chạy **Fable**: **pure orchestrator tuyệt đối — cấm m�
 
 **Heuristic L/XL vs hard-reasoning-code**: tín hiệu "đã thử fix không được", "security review", "concurrency/race condition", "thiết kế thuật toán phức tạp" → **hard-reasoning-code** (Codex trước). Spec rõ, biết ngay cách làm (thêm field, implement theo design có sẵn, refactor cơ học có suy luận nhẹ) → **L/XL** (Sonnet trước). Nghi ngờ → chọn hard-reasoning-code (Codex mạnh hơn, an toàn hơn khi under-provision). M-mechanical ưu tiên DeepSeek trước (sai cũng dễ reject), fallback Sonnet ngay khi fail.
 
+**Git-ops executor (khi main không tự chạy được — vd Fable-main):** git mechanical (commit/push/branch/tag, lệnh exact do main soạn sẵn) → subagent in-harness `model: haiku` (Sonnet trần; agent Sonnet cùng task còn sống → dùng lại). Deploy flow (merge protected + smoke test + push safety) → subagent in-harness Sonnet. CẢ HAI in-harness ONLY — wrapper ngoài (deepseek/gemini/codex) chỉ sản xuất diff, KHÔNG đụng git state (`check_no_new_commits` enforce). Confirm gate deploy (số commit, tác động, downtime) vẫn ở main + user TRƯỚC dispatch — executor không tự quyết.
+
 **Repo KHÔNG có delegate wrapper** (`scripts/delegate/` vắng): chỉ `delegate-sonnet` (in-harness) chạy được — mọi nhánh cần execute route thẳng sang Sonnet, KHÔNG STOP, KHÔNG Opus tự ôm. Ghi rõ trong report là repo thiếu wrapper.
 
 ### Code-level enforcement
