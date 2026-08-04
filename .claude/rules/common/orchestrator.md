@@ -123,6 +123,7 @@ Khi main agent chạy **Fable**: **pure orchestrator tuyệt đối — cấm m�
 | **reasoning-only** | architecture design, debug chẩn đoán root cause, code review (KHÔNG kèm edit) | **Opus main** | — |
 | **M-mechanical** | boilerplate / batch edit | `delegate-deepseek` | → sonnet → re-classify L/XL (1 lần) → STOP + báo user |
 | **read-only** | audit, cross-file summary, grep rộng, risk analysis | `delegate-sonnet` | → gemini (free, chậm hơn; degrade >200K) → deepseek → STOP + báo user |
+| **web-research** | research web nhiều nguồn, so sánh options, đọc docs dài | subagent in-harness `model: fable` (WebSearch/WebFetch) | → opus → sonnet → gemini (search grounding, chỉ gom nguồn URL) → STOP + báo user. ≤2 query → main tự làm |
 | **hard-reasoning-code** | bug khó đã resist fix thường, algo design phức tạp, security-sensitive edit, refactor invariant tinh vi (concurrency, transaction) | `delegate-codex` | → sonnet → STOP: Opus re-decompose spec |
 | **L/XL** | code/edit thật theo spec rõ: implement feature, refactor thường, fix bug sau khi đã chẩn đoán rõ nguyên nhân | `delegate-sonnet` | → codex → STOP: Opus re-decompose spec (KHÔNG rơi về DeepSeek) |
 
