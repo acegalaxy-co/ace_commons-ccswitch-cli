@@ -3,11 +3,12 @@
 <!-- BEGIN HARNESS RULES (managed by install.sh — do not edit inside) -->
 ## Quick links — rules QUAN TRỌNG
 
-- ⭐⭐⭐ Global `[[vault-no-mcp]]` — **P0**: Vault CRUD KHÔNG qua MCP, Notion API direct
-- ⭐⭐⭐ Global `[[token-budget]]` — **P0**: context-window budget
+- ⭐⭐⭐ [.claude/rules/common/vault-no-mcp.md](.claude/rules/common/vault-no-mcp.md) — **P0**: Vault CRUD KHÔNG qua MCP, Notion API direct
+- ⭐⭐⭐ [.claude/rules/common/token-budget.md](.claude/rules/common/token-budget.md) — **P0**: context-window budget
 - [.claude/rules/project/git-workflow.md](.claude/rules/project/git-workflow.md) — branching, working branch rule, protected-branch deploy confirm, worktree, cleanup
-- Global `[[feature-redflags]]` — safe minimal changes + RED FLAGS cognitive wedge
+- [.claude/rules/common/feature-redflags.md](.claude/rules/common/feature-redflags.md) — safe minimal changes + RED FLAGS cognitive wedge
 - Thêm/sửa rule → đọc [.claude/rules/common/rule-loading-policy.md](.claude/rules/common/rule-loading-policy.md) trước (rule mới mặc định LAZY `paths:`)
+- Ghi memory type project → mirror vào [.claude/memory/](.claude/memory/) theo [.claude/rules/common/memory-mirror.md](.claude/rules/common/memory-mirror.md)
 - ⭐⭐⭐ **Harness Architecture (P0)** — xem section dưới
 
 ## ⭐⭐⭐ Harness Architecture (P0 — đọc kỹ)
