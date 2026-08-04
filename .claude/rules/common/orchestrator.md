@@ -82,7 +82,25 @@ Prompt marker (v1.2): mọi dispatch delegate-* PHẢI chứa literal `task-grap
 - Mỗi prompt dispatch delegate-* PHẢI chứa marker `task-graph <slug>#<id>` khớp row + slug trong file graph. Hook `pre-task-dispatch-gate.sh` HARD-BLOCK dispatch khi: graph tồn tại mà prompt thiếu marker, id không có trong bảng, slug trong marker lệch header (marker v1.2 mới), hoặc row `rw=W` có `locked≠yes` — interface-lock gate chuyển từ behavioral sang enforce cứng (khác Enforcement note ở Hard rules trên, vốn chỉ self-binding). Marker v1 (không slug) → tolerate, không block chỉ vì thiếu slug. Header bảng bị reformat (cột đổi tên/thứ tự) → gate **fail-open + WARN log** (hành vi mới — không hard-block khi parse thất bại, tránh false-block do đổi format ngoài ý).
 - Orchestrator update cột `status` của row ngay sau mỗi verdict (pass/revise) từ subagent-stop-record.sh. Sau integration verify (xem đoạn Integration verify ở Generator≠verifier) → set `integration-status: pass`. Task hoàn tất → set `status: done`; `session-start.sh` dọn file khi `status: done`.
 - Hook `pre-bash-gate.sh` chặn `git commit` của main-agent khi graph đang `status: integrating` mà `integration-status` chưa `pass` — chống commit tổng trước khi verify tích hợp xong.
-- **Icon map v1.1** (hiển thị chat/statusline, KHÔNG ghi vào file): `⬜ pending · 🔄 dispatched · ✅ pass · ♻️ revise · ✔️ done`. File graph luôn text thuần ở cột status (hook parse text, không parse icon). Statusline script `.claude/statusline-orchestration.sh` đọc graph → render segment `📊` dưới prompt (chain sau global statusline nếu project có).
+- **Render block v1.2** (thay icon map bản trước):
+  - Icon map RENDER-ONLY (hiển thị chat/statusline, KHÔNG ghi vào file graph): `⬜ queued · 🚀 spawned · 🔄 running · 📥 returned · 👀 reviewing · ♻️ revise · ✅ pass · ✔️ done · 🛑 fail · ⏳ pending · 🧪 verify · 🔀 merging · 🧠 orchestrator · 🤖 agents · 📊 header`.
+  - Mapping row-status (file, text thuần) → render-status: orchestrator suy ra từ session knowledge, KHÔNG ghi state mới vào file: `pending`→⬜ (hoặc 🚀 vừa spawn) · `dispatched`→🔄 (hoặc 📥 đã return chờ review / 👀 đang review) · `revise`→♻️ kèm số vòng · `pass`→✅ · `done`→✔️ · fail hết fallback chain→🛑.
+  - Template block chat (in trong code block ```text để font mono):
+
+    ```text
+    ╭─ 📊 task-graph: <slug> ── wave n/m ──────────────╮
+    │  🧠 ORCHESTRATOR: <state> · integration: <icon>   │
+    │  🤖 AGENTS                                        │
+    │  ├─ #1 <subtask>  <persona>  ✅ pass              │
+    │  ├─ #2 <subtask>  <persona>  🔄 running           │
+    │  └─ #4 <subtask>  <persona>  ⬜ queued (w3)       │
+    │  ✅n · 🔄n · ♻️n · ⬜n                             │
+    ╰───────────────────────────────────────────────────╯
+    ```
+
+  - Graph >8 rows → chỉ render wave hiện tại + queued kế tiếp, còn lại gộp vào footer đếm.
+  - Trigger: in block sau MỖI event orchestration — dispatch (kèm banner Dispatch visibility mục 1), subagent return, verdict, merge, wave transition. Lý do: VSCode plugin KHÔNG render statusline — block chat là kênh hiển thị chính cho user plugin; statusline chỉ là bonus CLI.
+  - GIỮ nguyên: file graph luôn text thuần ở cột status (hook parse text, không parse icon); KHÔNG thêm cột vào bảng graph (hooks parse field index cứng — thêm cột làm gate fail-open âm thầm); statusline script `.claude/statusline-orchestration.sh` đọc graph → render segment `📊` dưới prompt (chain sau global statusline nếu project có).
 
 ## Fable-main (P0 — chặt hơn Opus)
 
@@ -184,7 +202,7 @@ Delegate KHÔNG có session context. Mỗi prompt PHẢI đủ: (1) repo path + 
 
 4. **Tránh:** ❌ dispatch câm không banner. ❌ foreground Bash chạy wrapper 10 phút (user nhìn spinner trống — luôn `run_in_background` + Monitor với wrapper). ❌ Monitor filter quá rộng (raw log spam chat) — chỉ heartbeat + terminal signals.
 
-5. **Progress table:** sau mỗi verdict cập nhật row trong task-graph, in lại bảng graph ra chat với icon map v1.1 (hoặc dòng đếm tóm tắt `✅n 🔄n ♻️n ⬜n` khi bảng lớn) — user thấy tiến độ không cần hỏi.
+5. **Progress table:** sau MỖI event (dispatch/return/verdict/merge/wave transition) — không chỉ sau verdict — cập nhật row trong task-graph rồi in Render block v1.2 (xem section Task-graph artifact) ra chat. Bảng lớn (>8 rows) → fallback dòng đếm tóm tắt `✅n 🔄n ♻️n ⬜n`. Lý do in mọi event: VSCode plugin không có statusline, block chat là kênh hiển thị chính — user thấy tiến độ không cần hỏi.
 
 ## Hard constraints
 
