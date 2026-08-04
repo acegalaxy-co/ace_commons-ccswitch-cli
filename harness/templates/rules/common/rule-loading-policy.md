@@ -2,7 +2,9 @@
 name: rule-loading-policy
 description: Project rule chỉ always-load khi P0-mọi-turn; còn lại BẮT BUỘC paths: lazy-load để mọi project mở lên không nuốt context lớn
 status: live
-updated: 2026-07-16
+updated: 2026-08-04
+paths:
+  - ".claude/rules/**"
 metadata:
   type: reference
 ---

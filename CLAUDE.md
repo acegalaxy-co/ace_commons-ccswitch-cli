@@ -7,6 +7,7 @@
 - ⭐⭐⭐ Global `[[token-budget]]` — **P0**: context-window budget
 - [.claude/rules/project/git-workflow.md](.claude/rules/project/git-workflow.md) — branching, working branch rule, protected-branch deploy confirm, worktree, cleanup
 - Global `[[feature-redflags]]` — safe minimal changes + RED FLAGS cognitive wedge
+- Thêm/sửa rule → đọc [.claude/rules/common/rule-loading-policy.md](.claude/rules/common/rule-loading-policy.md) trước (rule mới mặc định LAZY `paths:`)
 - ⭐⭐⭐ **Harness Architecture (P0)** — xem section dưới
 
 ## ⭐⭐⭐ Harness Architecture (P0 — đọc kỹ)

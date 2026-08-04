@@ -2,7 +2,7 @@
 name: git-workflow
 description: Branch strategy (working branch + protected branches) + working-branch discipline, protected-branch deploy confirm, worktree lifecycle, cleanup-sau-merge. P0 guardrail cho mọi git op có tính destructive/outward-facing.
 status: live
-updated: 2026-07-21
+updated: 2026-08-04
 metadata:
   type: reference
 ---
@@ -14,48 +14,47 @@ Bổ sung [[git-conventions]] (org default + commit format). Phần này = branc
 ## Branching strategy
 
 - **dev** — working branch, phát triển hàng ngày, sửa trực tiếp.
-- **Protected branches** (vd `stable`, `prod`, `release` — điền theo thực tế project) — CHỈ merge từ `dev`, KHÔNG push trực tiếp.
+- **Protected branches** (vd `stable`, `prod`, `release` — theo thực tế project) — CHỈ merge từ `dev`, KHÔNG push trực tiếp.
 
 ## Working branch (QUAN TRỌNG)
 
 - **Sửa trực tiếp trên `dev`.** KHÔNG sửa trên protected branch/`feat/*`/`fix/*` trừ khi user yêu cầu rõ. **Chỉ áp khi 1 session duy nhất chạm repo** — đa session xem block dưới.
-- Nhận task mới → check `git branch --show-current` trước → khác `dev` thì checkout `dev` (trừ khi user chỉ định).
+- Nhận task mới → check `git branch --show-current` → khác `dev` thì checkout `dev` (trừ khi user chỉ định).
 - Merge về protected branch chỉ khi user xác nhận. Sau merge → cleanup ở dưới.
 
 ## Đa session song song (QUAN TRỌNG)
 
-Nhiều Claude session mở cùng repo dir = **chung 1 working tree + chung branch checked-out (`dev`)** — không phải chung logic mà chung file trên đĩa + chung `HEAD`/index. 2 session cùng "sửa trực tiếp `dev`" → đè uncommitted lẫn nhau, race `git add`/`commit` (commit lẫn changes 2 task), `git branch --show-current` cả 2 đều thấy `dev` nên không biết đối phương tồn tại.
+Nhiều session mở cùng repo dir = chung working tree + chung `HEAD`/index → đè uncommitted lẫn nhau, race `git add`/`commit`, cả 2 đều thấy `dev` nên không biết đối phương tồn tại.
 
-- **≥2 session mở cùng repo → mỗi session PHẢI worktree riêng** `.claude/worktrees/<slug>` + branch `feat/<slug>` (hoặc `fix/`, `chore/`... theo loại task). KHÔNG session nào sửa trực tiếp `dev`.
-- Áp **kể cả khi task disjoint** (khác file / khác module hoàn toàn) — chung working tree vẫn race index/HEAD dù không đụng nội dung file. Nghi ngờ overlap-hay-không → coi là overlap, tách.
+- **≥2 session cùng repo → mỗi session PHẢI worktree riêng** `.claude/worktrees/<slug>` + branch `feat/<slug>` (hoặc `fix/`, `chore/`...). KHÔNG session nào sửa trực tiếp `dev`.
+- Áp **kể cả khi task disjoint** — chung working tree vẫn race index/HEAD. Nghi ngờ overlap → coi là overlap, tách.
 - Ngoại lệ duy nhất: user nói rõ chấp nhận rủi ro chung `dev`.
-- Phát hiện đa session: session hiện tại thấy uncommitted changes lạ / branch `dev` nhảy commit không do mình → dừng, cảnh báo user có session khác đang chạm repo.
-- Worktree lifecycle (tạo/cleanup) theo section [Worktree](#worktree-task-song-song) dưới.
+- Thấy uncommitted changes lạ / `dev` nhảy commit không do mình → dừng, cảnh báo user có session khác.
 
 ## Protected branch deploy (nếu project có)
 
 - **KHÔNG push thẳng protected branch.** Mọi commit trên đó PHẢI từ `git merge dev`.
-- **KHÔNG tự động merge `dev` → protected branch hoặc push protected branch.** Chỉ khi user chỉ thị rõ ("deploy", "đẩy lên prod"...).
+- **KHÔNG tự động merge/push protected branch.** Chỉ khi user chỉ thị rõ ("deploy", "đẩy lên prod"...).
 - Trước push protected branch, BẮT BUỘC dừng hỏi user **confirm** kèm:
-  - Số commit sẽ đẩy + tóm tắt 1 dòng mỗi commit (`git log origin/<protected>..<protected> --oneline`)
+  - Số commit + tóm tắt 1 dòng mỗi commit (`git log origin/<protected>..<protected> --oneline`)
   - Loại thay đổi: code/runtime / docs / config / mix
   - Tác động: cần restart service? có downtime?
 - **Worktree bắt buộc** khi merge `dev` → protected branch: dùng `.claude/worktrees/<protected>-deploy/` để giữ working tree ở `dev`. Push xong → `git worktree remove`.
 
 ## Worktree (task song song)
 
-- Đặt tại `.claude/worktrees/<slug>` (gitignored, không xoá thủ công) — path hardcode trong `EnterWorktree`, dùng chung agent-tool native + delegate wrapper. Grep/find phải loại trừ dir này.
+- Đặt tại `.claude/worktrees/<slug>` (gitignored, không xoá thủ công) — path hardcode trong `EnterWorktree`. Grep/find loại trừ dir này.
 - Tự tạo khi task độc lập / user nhiều việc dở / user nói rõ:
   - Branch mới: `git worktree add .claude/worktrees/<slug> -b feat/<slug>` (từ `dev`).
   - Branch có sẵn (deploy): `git worktree add .claude/worktrees/<slug> <existing-branch>` (KHÔNG `-b`).
   - Báo user path + lệnh `cd`.
 - Naming: `feat/`, `fix/`, `chore/`, `refactor/`, `hotfix/` + slug kebab-case. Worktree cùng task đã có → dùng lại.
 - Delegate wrapper worktree (`.claude/worktrees/delegate-*/`) do wrapper tự quản — xem [[delegate-llm]].
-- **Nhiều subagent song song → mỗi task 1 worktree riêng.** KHÔNG để 2+ subagent cùng edit chung file/worktree (conflict). Chung 1 worktree chỉ khi chắc chắn không đụng file nhau — nghi ngờ → tách riêng.
+- **Nhiều subagent song song → mỗi task 1 worktree riêng.** KHÔNG 2+ subagent cùng edit chung file/worktree. Nghi ngờ → tách riêng.
 
 ### Dọn orphan dir + junk
 
-`git worktree prune` CHỈ dọn worktree registered stale — không đụng dir rác (leftover `delegate-*/`, `.DS_Store`, bundle lạc chỗ). Trước khi kết session hoặc khi dir bẩn, audit:
+`git worktree prune` CHỈ dọn worktree registered stale — không đụng dir rác. Trước kết session hoặc khi dir bẩn:
 
 ```bash
 cd .claude/worktrees && git worktree list  # worktree HỢP LỆ
@@ -67,11 +66,11 @@ for d in */; do [ -e "$d/.git" ] || echo "ORPHAN non-worktree: $d"; done
 
 ## Trước khi merge — check fix ledger
 
-Trước `git merge` bất kỳ branch nào vào `dev`/protected branch — chạy skill `fix-ledger` (chế độ CHECK) nếu project có `.claude/fix-ledger.md`. Tránh merge branch cũ/stale đè lại bugfix đã merge trước đó. Sau khi fix/feature có rủi ro bị đè merge xong → skill `fix-ledger` (chế độ RECORD).
+Trước `git merge` vào `dev`/protected branch — chạy skill `fix-ledger` (CHECK) nếu project có `.claude/fix-ledger.md` (tránh merge branch stale đè bugfix). Sau fix/feature có rủi ro bị đè → `fix-ledger` (RECORD).
 
 ## Cleanup sau merge (BẮT BUỘC, in-session)
 
-**Cốt lõi**: branch tạm (`feat/`, `fix/`, `hotfix/`, `chore/`, `refactor/`) sau khi merge vào branch chính (`dev` hoặc protected branch) trong CÙNG SESSION phải cleanup ngay. KHÔNG để branch rác qua session.
+Branch tạm (`feat/`, `fix/`, `hotfix/`, `chore/`, `refactor/`) sau merge vào branch chính trong CÙNG SESSION → cleanup ngay, KHÔNG để branch rác qua session.
 
 **Trigger**: ngay sau `git merge feat/<slug>` thành công — 3 bước theo thứ tự:
 
@@ -80,9 +79,9 @@ Trước `git merge` bất kỳ branch nào vào `dev`/protected branch — ch�
 3. **Remote branch** — `git push origin --delete feat/<slug>` (best-effort). Lỗi → log warning, không fail flow. CHỈ trên `origin`.
 
 **Whitelist cleanup**: `feat/`, `fix/`, `hotfix/`, `chore/`, `refactor/`.
-**Protected (HARD BLOCK)**: `dev` + mọi protected/release branch khác của project (vd `stable`, `prod`, `release` — điền theo thực tế repo).
+**Protected (HARD BLOCK)**: `dev` + mọi protected/release branch khác.
 
-**Slash command**: [/git-push-safety](../commands/git-push-safety.md) để gom push + smoke test + gitleaks + sensitive scan. Tránh `git push` thô (dễ quên cleanup).
+**Slash command**: [/git-push-safety](../commands/git-push-safety.md) gom push + smoke test + gitleaks + sensitive scan — tránh `git push` thô.
 
 **Confirm trước xoá**: BẮT BUỘC liệt kê candidates + hỏi `[a]ll / [s]elect / [n]one` trước delete. Destructive → không auto-execute không xác nhận.
 
