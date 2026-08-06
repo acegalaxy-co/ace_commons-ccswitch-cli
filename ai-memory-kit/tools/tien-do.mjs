@@ -14,6 +14,7 @@ import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ngheXongChuaBump } from './doi-soat.mjs';
+import { acquireLock, releaseLock } from './khoa-vault.mjs';
 
 const ROOT = process.env.MEMORY_ROOT || join(dirname(fileURLToPath(import.meta.url)), '..');
 const MEM = join(ROOT, 'Memories');
@@ -164,6 +165,7 @@ export function refreshTienDo(write = true) {
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
   const write = process.argv.includes('--write');
+  if (write) { acquireLock(ROOT); process.on('exit', () => releaseLock(ROOT)); }
   const { content, stats } = buildTienDo();
   if (write) {
     writeFileSync(join(MEM, 'TIEN-DO.md'), content, 'utf8');

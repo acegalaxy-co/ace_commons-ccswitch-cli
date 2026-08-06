@@ -24,6 +24,9 @@ Một file backlog chung, mỗi việc 1 dòng: **trạng thái · phiên/nhánh
 10. **WIP = 1:** mỗi phiên giữ TỐI ĐA 1 việc `đang-làm` cùng lúc → không ôm nhiều việc bỏ dở, không khoá nhiều vùng.
 11. **ĐỐI CHIẾU lúc khởi động/đứt-lại:** đầu phiên đọc `_Backlog.md` → dọn claim quá hạn của CHÍNH MÌNH + kiểm việc tưởng `done` đã merge thật chưa.
 
+## Khoá file `.khoa-engine.lock` (chỉ chống CÙNG MÁY)
+Các script ghi (`memory-doctor.mjs --fix`, `build-index.mjs --write`, `tien-do.mjs --write`, `so-nang-luc.mjs --write`, `ghi-manh.mjs`, `moi-so-nang-luc.mjs --write`) tự chiếm khoá `.khoa-engine.lock` ở gốc tủ trước khi ghi — chống 2 **phiên cùng máy** chạy song song đè ghi lẫn nhau (stale >10 phút tự phá; hết retry → fail-open, vẫn chạy tiếp). **KHÔNG bảo vệ 2 máy khác nhau** đồng bộ qua Drive/iCloud — sync không kịp thời gian thực nên khoá trên máy A vô hình với máy B. Đa-máy vẫn phải theo kỷ luật backlog/1-việc-1-người ở trên.
+
 ## Khi nào nâng lên CODE (đừng vội)
 Chỉ khi thật sự **đua giành cùng việc trong tích tắc** mới cần khoá tự động — và **đừng dựng database**. Rẻ-mà-chắc: **"claim bằng git commit"** — đưa `_Backlog.md` vào 1 repo git; giành việc = commit+push dòng `đang-làm`, ai push trước thắng, kẻ thua pull→nhặt việc khác. Git = máy-khoá miễn phí.
 > ⚠️ Nếu `_Backlog.md` nằm trên cloud-sync (iCloud/Drive) có rủi ro **mất-ghi** khi 2 phiên sửa cùng giây → giữ sửa NHỎ + đọc-lại-trước-khi-ghi; đụng thật thì chuyển sang claim-bằng-git.

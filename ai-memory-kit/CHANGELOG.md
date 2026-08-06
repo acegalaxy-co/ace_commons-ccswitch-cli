@@ -1,5 +1,11 @@
 # CHANGELOG — MemoryOS
 
+## v4.2 — 2026-08-06
+Bỏ `addons/` (dev-playbook + ai-patterns + skills) — nội dung kỹ thuật dev từ project cũ, không phải quy tắc nghiệp vụ chung. Kit giờ thuần **bộ nhớ NGHIỆP VỤ**. Khôi phục qua git history (tag/commit trước khi xoá) nếu cần tham khảo lại. `tools/nang-luc-registry.json` re-theme sang 12 capability nghiệp vụ (pricing, vendor-selection, contract-terms, onboarding-sop, refund-policy, escalation, promotion-campaign, hiring, partner-deal, budget-approval, customer-segment, kpi-report) thay cho danh mục dev cũ.
+
+- `handbook-gate.mjs` +cache TTL-free (`tmpdir()/handbook-gate-ok-<hash transcript_path>`) — phiên đã chứng minh đọc HANDBOOK 1 lần thì các Edit/Write sau trong phiên đó pass ngay, khỏi đọc lại full transcript mỗi lần (giảm P2 latency).
+- Thêm `tools/khoa-vault.mjs` (`acquireLock`/`releaseLock`, mkdir atomic + stale-break 10 phút + fail-open) — wire vào mọi đường WRITE (`memory-doctor.mjs --fix`, `build-index.mjs --write`, `tien-do.mjs --write`, `so-nang-luc.mjs --write`, `ghi-manh.mjs`, `moi-so-nang-luc.mjs --write`) chống 2 phiên CÙNG MÁY đè ghi lẫn nhau; đa-máy qua Drive sync vẫn KHÔNG được bảo vệ (xem `docs/multi-session.md`).
+
 ## v4.1 — 2026-07-10
 Đào thêm **cụm kiến thức generic** đúc từ đợt vận hành nhiều dự án 09–10/07 (đã rửa sạch danh tính) — mở rộng Dev Playbook + 2 công cụ đối-soát mới + siết Tầng-0.
 

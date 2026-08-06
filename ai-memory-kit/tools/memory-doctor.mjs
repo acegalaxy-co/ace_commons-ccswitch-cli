@@ -25,8 +25,11 @@ import { spawnSync } from 'node:child_process';
 import { buildBlock, processDir, MEM, ROOT, START, END } from './build-index.mjs';
 import { refreshTienDo } from './tien-do.mjs';
 import { refreshSoNangLuc } from './so-nang-luc.mjs';
+import { acquireLock, releaseLock } from './khoa-vault.mjs';
 
 const FIX = process.argv.includes('--fix');
+// 🔒 --fix ghi file (status/mồ côi/INDEX) → khoá chống 2 phiên cùng máy đè nhau; nhả lúc thoát.
+if (FIX) { acquireLock(ROOT); process.on('exit', () => releaseLock(ROOT)); }
 const SNAP = !process.argv.includes('--no-snapshot');
 const VOCAB = ['live', 'wip', 'blocked', 'plan', 'research', 'maintain', 'done', 'reference', 'archived'];
 const MIN_FILES = Number(process.env.MEMORY_MIN_FILES) || 10;
@@ -219,7 +222,7 @@ console.log('\n④ File rác / xung đột');
 let junk = 0;
 function scanJunk(dir) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === '.git' || e.name === 'node_modules') continue;
+    if (e.name === '.git' || e.name === 'node_modules' || e.name === '.khoa-engine.lock') continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) scanJunk(p);
     else if (/ \d\.\w+$/.test(e.name) || /conflict/i.test(e.name)) { say('  ⚠️', `Nghi xung đột (sync): ${p}`); junk++; }
@@ -256,7 +259,7 @@ if (SNAP) {
     } else if (existsSync(join(REPO, '.git')) && spawnSync('git', ['fsck', '--connectivity-only'], { cwd: REPO }).status !== 0) {
       say('  🔴', `git mirror (.git) hỏng — fsck lỗi → BỎ chụp lần này. Nên xoá ${REPO} để phiên sau dựng lại sạch.`);
     } else {
-      const rs = spawnSync('rsync', ['-a', '--delete', '--exclude', '.git', '--exclude', '.DS_Store', '--exclude', '*.icloud', '--exclude', 'node_modules', ROOT + '/', REPO + '/']);
+      const rs = spawnSync('rsync', ['-a', '--delete', '--exclude', '.git', '--exclude', '.DS_Store', '--exclude', '*.icloud', '--exclude', 'node_modules', '--exclude', '.khoa-engine.lock', ROOT + '/', REPO + '/']);
       if (rs.status !== 0) throw new Error('rsync lỗi: ' + (rs.stderr || ''));
       spawnSync('git', ['add', '-A'], { cwd: REPO });
       const dirty = spawnSync('git', ['diff', '--cached', '--quiet'], { cwd: REPO }).status;

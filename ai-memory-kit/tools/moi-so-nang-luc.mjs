@@ -12,10 +12,12 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { acquireLock, releaseLock } from './khoa-vault.mjs';
 
 const ROOT = process.env.MEMORY_ROOT || join(dirname(fileURLToPath(import.meta.url)), '..');
 const MEM = join(ROOT, 'Memories');
 const WRITE = process.argv.includes('--write');
+if (WRITE) { acquireLock(ROOT); process.on('exit', () => releaseLock(ROOT)); }
 
 // file (tương đối trong Memories/) · các năng lực mảnh này thể hiện · độ tin (cao|vua|thap)
 // 👇 ĐÂY LÀ VÍ DỤ — thay bằng các mảnh thật của bạn rồi chạy lại.

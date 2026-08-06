@@ -44,17 +44,15 @@
   <p class="lead">Giúp trợ lý AI <b>nhớ</b> quyết định, dự án &amp; cách bạn làm việc qua nhiều phiên — bằng các file chữ đọc-được, có kỷ luật, tự kiểm tra. Không cần cài database hay công cụ phức tạp.</p>
 
   <div class="box ok">
-    <b>📦 Bộ này gồm 2 phần:</b>
+    <b>📦 Bộ này gồm:</b>
     <ul style="margin:6px 0 8px">
       <li><b>Tủ ký ức AI</b> (thư mục gốc) — giúp trợ lý AI nhớ qua nhiều phiên. <i>Phần chính, hướng dẫn này nói về nó.</i></li>
-      <li><b>Dev Playbook</b> (thư mục <code>addons/dev-playbook/</code>) — cẩm nang kỹ thuật + code mẫu cho <b>anh em dev</b> (deploy, bảo mật DB/RLS, feature-flag, rate-limit, CMS…). Mở khi dựng dự án mới.</li>
     </ul>
     <b>👉 Ai đọc gì:</b>
     <table style="margin:6px 0 0">
       <tr><th>Bạn là…</th><th>Làm gì</th></tr>
       <tr><td>Mới nhận bộ này</td><td>Làm <b>5 bước ở Mục 2</b> bên dưới (hoặc nhờ AI làm hộ)</td></tr>
       <tr><td>Đã cài bản cũ rồi</td><td>Chạy <code>node tools/nang-cap.mjs &lt;thư-mục-của-bạn&gt;</code> (ô ngay dưới) — giữ nguyên dữ liệu</td></tr>
-      <tr><td>Dev cần know-how kỹ thuật</td><td>Mở <code>addons/dev-playbook/README.md</code></td></tr>
       <tr><td>Học được cái hay, muốn góp ngược</td><td>Xem <code>CONTRIBUTING.md</code> (<code>tools/dong-gop.mjs</code>)</td></tr>
     </table>
   </div>
@@ -167,7 +165,6 @@ node tools/memory-doctor.mjs --fix         <span class="muted"># khám + tự v�
   <h2>5 · Tuỳ chọn nâng cao (khi cần)</h2>
   <div class="box ok" style="margin-top:6px">
     <ul style="margin:6px 0 0">
-      <li><b>🛠️ Dev Playbook (cho người code):</b> mở <code>addons/dev-playbook/README.md</code> — 10 bài cẩm nang kỹ thuật + code mẫu sẵn (<code>snippets/</code>): deploy an toàn, bảo mật DB (RLS), feature-flag bật/tắt, rate-limit, khuôn CMS web đa ngữ, an-toàn Git… Dựng dự án mới đỡ phát minh lại. KHÁC tủ ký ức (đây là code/hạ tầng).</li>
       <li><b>🔁 Học được cái hay → góp ngược cho cả nhóm:</b> chạy nút <b>3-Dong-gop</b> (hoặc <code>node tools/dong-gop.mjs "đề xuất"</code>) — nó gói <b>chỉ phần khung</b> bạn cải tiến + <b>tự quét rò chặn dữ liệu riêng/secret</b> → bạn <b>bỏ gói vào thư mục Google Drive chung "MemoryOS - Đóng góp"</b> (link trong <code>CONTRIBUTING.md</code>) → maintainer duyệt + merge → ra bản mới cho mọi người. Vòng 2 chiều: nâng-cấp (xuống) ↔ đóng-góp (lên).</li>
       <li><b>👀 Xem tủ bằng Obsidian:</b> muốn <i>nhìn</i> mạng lưới ký ức dạng sơ đồ? Cài <b>Obsidian</b> (miễn phí) → "Open folder as vault" → trỏ vào thư mục bộ nhớ → bật <b>Graph view</b>. Tủ đã cấu hình sẵn (<code>.obsidian/</code>). Chỉ để bạn xem; AI vẫn dùng tủ như cũ.</li>
       <li><b>👥 Nhiều phiên AI cùng làm:</b> mở nhiều cửa sổ/người cùng lúc → đọc <code>docs/multi-session.md</code> + dùng 1 file <code>_Backlog.md</code> chung (mẫu trong <code>templates/</code>) để không giẫm chân nhau.</li>
@@ -193,7 +190,6 @@ Memories/              Tủ ký ức: mục lục tổng + các nhóm + ví dụ
 tools/                 các công cụ (in mục lục · bác sĩ · bảng tiến độ · sổ năng lực · tạo mảnh · 4 hook · snapshot)
 templates/             mẫu mảnh · mục lục nhóm · CLAUDE.md · tien-do (bảng tiến độ) · BACKLOG (đa-phiên)
 docs/                  methodology (triết lý) · setup-guide (chi tiết) · multi-session · hoc-cheo-tu-bao-tri · giao-thuc-lam-viec-ai
-addons/dev-playbook/   🛠️ CẨM NANG KỸ THUẬT cho dev: 10 bài + code mẫu (snippets/) — KHÁC tủ ký ức (optional, xem addons/README.md)
 nut-bam/               🖱️ NÚT NHẤP ĐÚP (.command Mac / .bat Win): khám tủ · nâng cấp · đóng góp
 NANG-CAP.md            hướng dẫn NÂNG CẤP cho người đã cài bản cũ
 CONTRIBUTING.md        cách GÓP NGƯỢC cái hay về cho cả nhóm

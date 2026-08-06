@@ -12,6 +12,7 @@
 import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { acquireLock, releaseLock } from './khoa-vault.mjs';
 
 const ROOT = process.env.MEMORY_ROOT || join(dirname(fileURLToPath(import.meta.url)), '..');
 const MEM = join(ROOT, 'Memories');
@@ -93,6 +94,7 @@ const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.arg
 if (isMain) {
   const args = process.argv.slice(2);
   const write = args.includes('--write');
+  if (write) { acquireLock(ROOT); process.on('exit', () => releaseLock(ROOT)); }
   if (args.includes('--all')) {
     for (const d of readdirSync(MEM).filter(f => statSync(join(MEM, f)).isDirectory()))
       processDir(join(MEM, d), write);

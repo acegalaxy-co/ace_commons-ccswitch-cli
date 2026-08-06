@@ -11,8 +11,10 @@
 // ⚙️ CHỈNH 2 hằng số (qua biến môi trường) cho khớp setup của bạn:
 //    MEMORY_DIR_MARKER  = chuỗi nhận diện đường dẫn cây bộ nhớ (mặc định '/Memories/').
 //    HANDBOOK_NAME      = tên file sổ tay Tầng 0 (mặc định 'HANDBOOK.md').
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { tmpdir } from 'node:os';
 
 const MEM_MARKER = process.env.MEMORY_DIR_MARKER || '/Memories/';
 const HANDBOOK   = process.env.HANDBOOK_NAME    || 'HANDBOOK.md';
@@ -28,6 +30,13 @@ const tp = data?.transcript_path || '';
 if (!fp.includes(MEM_MARKER)) ok();
 if (fp.includes(HANDBOOK)) ok();
 
+// ⚡ CACHE: mỗi phiên chỉ cần chứng minh đã đọc HANDBOOK 1 LẦN — tránh đọc lại full transcript
+//    (có thể dài) ở MỌI Edit/Write tiếp theo trong cùng phiên. Key theo transcript_path (1 file/phiên).
+//    Không TTL — tmpdir tự dọn theo OS; phiên mới có transcript_path khác → cache khác, không lẫn.
+const cacheFile = join(tmpdir(), 'handbook-gate-ok-' + createHash('sha256').update(tp).digest('hex').slice(0, 16));
+if (existsSync(cacheFile)) ok();
+const okCached = () => { try { writeFileSync(cacheFile, ''); } catch { /* best-effort */ } ok(); };
+
 // Có lượt Read/Edit file_path THẬT là HANDBOOK trong 1 transcript không? (KHÔNG nhầm với lời nhắc
 // SessionStart vốn cũng có thể chứa tên HANDBOOK nhưng KHÔNG ở dạng "file_path":"...HANDBOOK").
 const RE = new RegExp('"file_path"\\s*:\\s*"[^"]*' + HANDBOOK.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"');
@@ -37,7 +46,7 @@ const touchedIn = (file) => {
 
 // 1) Phiên hiện tại đã đọc Tầng 0? (đường nhanh — đúng cho phiên CHÍNH)
 if (!tp) ok();                       // không có transcript path → fail-open
-if (touchedIn(tp)) ok();
+if (touchedIn(tp)) okCached();
 
 // 2) Chưa thấy → có thể là SUB-AGENT. Quét transcript các phiên ĐANG HOẠT ĐỘNG (mtime ≤ 6h) cùng thư mục;
 //    phiên nào đã đọc Tầng 0 thì coi như môi trường này đã nạp lằn ranh đỏ → cho qua. Dừng ở lần khớp đầu.
@@ -53,7 +62,7 @@ try {
     .filter((x) => x && now - x.m <= SIX_H)
     .sort((a, b) => b.m - a.m)   // mới nhất trước (phiên cha đang chạy ⇒ mtime gần)
     .slice(0, 12);               // giới hạn để hook luôn nhanh
-  for (const { p } of files) if (touchedIn(p)) ok();
+  for (const { p } of files) if (touchedIn(p)) okCached();
 } catch { ok(); }                // lỗi quét thư mục → fail-open
 
 // CHẶN: trả exit 2 + thông điệp cho AI (PreToolUse: stderr → AI đọc).

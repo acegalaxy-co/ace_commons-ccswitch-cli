@@ -6,36 +6,32 @@
 > 🥇 BẢN CHUẨN = mảnh `do-tin: cao` + còn sống (live/maintain), mới nhất. 🔴 `do-tin: thap` = CHƯA kiểm → tái dùng phải CẢNH BÁO.
 
 <!-- TỰ SINH: node so-nang-luc.mjs --write -->
-<!-- in lúc 2026-08-06 06:02 · quét 1 mảnh · 1 có 'capability:' · 1 năng lực · 0 đồ nghề -->
+<!-- in lúc 2026-08-06 07:13 · quét 1 mảnh · 1 có 'capability:' · 1 năng lực · 0 đồ nghề -->
 
 ## 🔎 Tra nhanh (1 liếc)
 
 | Năng lực | Bản chuẩn hiện tại | Độ tin | Số bản |
 |---|---|---|---|
-| **Công tắc bật/tắt tính năng** | `SampleProject` · [sample-decision](SampleProject/sample-decision.md) | 🟡 vừa | 1 |
+| **Báo giá / định giá** | `SampleProject` · [sample-decision](SampleProject/sample-decision.md) | 🟡 vừa | 1 |
 
 ## 📚 Chi tiết từng năng lực
 
-### Công tắc bật/tắt tính năng  `feature-flag`
+### Báo giá / định giá  `pricing`
 - **[sample-decision](SampleProject/sample-decision.md)** — `SampleProject` · tin 🟡 vừa · *2026-01-01*
     "Ví dụ 1 mảnh ký ức: quyết định dùng X thay Y vì Z. Xoá khi bắt đầu dự án thật."
 
 ## 🌱 Năng lực CHƯA có bản nào trong Sổ (gặp lúc làm thì gắn `capability:` cho mảnh)
 
-- **Deploy + migration DB** `deploy`
-- **Phân quyền nhiều vai (RBAC)** `rbac`
-- **Đăng nhập / Auth** `auth`
-- **Đa-nhà (multi-tenant)** `multi-tenant`
-- **Web CMS đa ngữ** `cms-site`
-- **Đa ngôn ngữ** `i18n`
-- **SEO + sitemap + analytics** `seo`
-- **Upload ảnh/file + Storage** `storage-upload`
-- **Cổng thanh toán** `payments`
-- **Autofix / self-heal** `autofix`
-- **Thùng rác / xóa mềm** `soft-delete`
-- **Email (SMTP/transactional)** `email`
-- **Thông báo đa kênh** `notification`
-- **AI đọc tài liệu / trích xuất** `ai-doc-read`
-- **Tách môi trường DEV/LIVE** `dev-live-env`
+- **Chọn nhà cung cấp** `vendor-selection`
+- **Điều khoản hợp đồng** `contract-terms`
+- **Quy trình onboard** `onboarding-sop`
+- **Hoàn tiền / đổi trả** `refund-policy`
+- **Xử lý khiếu nại leo thang** `escalation`
+- **Khuyến mãi** `promotion-campaign`
+- **Tuyển dụng** `hiring`
+- **Đàm phán đối tác** `partner-deal`
+- **Duyệt ngân sách** `budget-approval`
+- **Phân khúc khách hàng** `customer-segment`
+- **Báo cáo KPI** `kpi-report`
 
 <!-- HẾT TỰ SINH -->

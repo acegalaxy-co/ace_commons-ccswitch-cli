@@ -5,10 +5,11 @@
 // Dùng: node tools/test-fixes.mjs   → in OK/FAIL từng case, exit 1 nếu có FAIL.
 // Giá trị test dưới đây là chuỗi GIẢ (obviously-fake), chỉ vừa đủ dài để vượt ngưỡng regex — không phải secret thật.
 
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 let fails = 0;
@@ -76,6 +77,57 @@ const WS = '<WS>';
 const normDoctor = reDoctorSrc.split('[[:space:]]').join(WS).split('[:space:]').join(WS);
 const normDongGop = reDongGopSrc.split('\\/').join('/').split('\\s').join(WS);
 check('2 file SECRET_RE dong bo (cung source pattern, khac cu phap whitespace-class theo yeu cau engine)', normDoctor === normDongGop);
+
+// ── Fix P2-a: khoa-vault.mjs (lock chong da-phien cung may) ──
+{
+  const { acquireLock, releaseLock } = await import('./khoa-vault.mjs');
+  const lockRoot = mkdtempSync(join(tmpdir(), 'memkit-lock-'));
+  const lockPath = join(lockRoot, '.khoa-engine.lock');
+
+  const got1 = acquireLock(lockRoot);
+  check('khoa-vault acquire: tra true', got1 === true);
+  check('khoa-vault acquire: dir khoa ton tai', existsSync(lockPath));
+
+  // gia lap khoa CU (stale): ghi ts qua staleMs -> lan acquire sau phai pha va chiem lai
+  writeFileSync(join(lockPath, 'info.json'), JSON.stringify({ pid: 999999, ts: Date.now() - 20 * 60 * 1000, host: 'other' }), 'utf8');
+  const got2 = acquireLock(lockRoot, { retries: 1, staleMs: 10 * 60 * 1000 });
+  check('khoa-vault stale-break: chiem lai duoc (tra true)', got2 === true);
+  const info2 = JSON.parse(readFileSync(join(lockPath, 'info.json'), 'utf8'));
+  check('khoa-vault stale-break: info.json ghi lai pid moi', info2.pid === process.pid);
+
+  releaseLock(lockRoot);
+  check('khoa-vault release: dir khoa bien mat', !existsSync(lockPath));
+
+  // fail-open: khoa dang giu (ts moi = khong stale) + retries=0 -> van tra true, khong throw/kẹt
+  mkdirSync(lockPath);
+  writeFileSync(join(lockPath, 'info.json'), JSON.stringify({ pid: 1, ts: Date.now(), host: 'other' }), 'utf8');
+  const got3 = acquireLock(lockRoot, { retries: 0, staleMs: 10 * 60 * 1000 });
+  check('khoa-vault fail-open: het retry van tra true', got3 === true);
+
+  rmSync(lockRoot, { recursive: true, force: true });
+}
+
+// ── Fix P2-b: handbook-gate.mjs cache (giam latency doc full transcript moi Edit) ──
+{
+  const { createHash } = await import('node:crypto');
+  const gateDir = mkdtempSync(join(tmpdir(), 'memkit-gate-'));
+  const transcriptPath = join(gateDir, 'session.jsonl');
+  writeFileSync(transcriptPath, 'noise\n{"file_path":"/root/HANDBOOK.md"}\nmore-noise\n', 'utf8');
+  const cacheFile = join(tmpdir(), 'handbook-gate-ok-' + createHash('sha256').update(transcriptPath).digest('hex').slice(0, 16));
+  rmSync(cacheFile, { force: true }); // don cache cu neu test truoc de lai (hash trung path)
+
+  const input1 = JSON.stringify({ tool_input: { file_path: '/root/Memories/y.md' }, transcript_path: transcriptPath });
+  const r1 = spawnSync(process.execPath, [join(HERE, 'handbook-gate.mjs')], { input: input1, encoding: 'utf8' });
+  check('handbook-gate lan 1 (da doc HANDBOOK): exit 0', r1.status === 0);
+  check('handbook-gate lan 1: cache file da tao', existsSync(cacheFile));
+
+  writeFileSync(transcriptPath, '', 'utf8'); // xoa sach transcript -> neu KHONG co cache se bi CHAN (exit 2)
+  const r2 = spawnSync(process.execPath, [join(HERE, 'handbook-gate.mjs')], { input: input1, encoding: 'utf8' });
+  check('handbook-gate lan 2 (transcript rong, cache hit): van exit 0', r2.status === 0);
+
+  rmSync(cacheFile, { force: true });
+  rmSync(gateDir, { recursive: true, force: true });
+}
 
 console.log(`\n----------------\n${fails === 0 ? 'PASS - tat ca OK' : `FAIL - ${fails} case`}`);
 process.exit(fails === 0 ? 0 : 1);

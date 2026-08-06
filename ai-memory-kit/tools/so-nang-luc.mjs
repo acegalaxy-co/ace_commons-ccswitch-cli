@@ -14,6 +14,7 @@
 import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { acquireLock, releaseLock } from './khoa-vault.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.MEMORY_ROOT || join(HERE, '..');
@@ -158,6 +159,7 @@ export function refreshSoNangLuc(write = true) {
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
   const write = process.argv.includes('--write');
+  if (write) { acquireLock(ROOT); process.on('exit', () => releaseLock(ROOT)); }
   const { content, stats } = buildSoNangLuc();
   if (write) {
     writeFileSync(join(MEM, 'SO-NANG-LUC.md'), content, 'utf8');

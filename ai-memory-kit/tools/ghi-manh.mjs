@@ -14,8 +14,14 @@
 //         ③ in sẵn dòng để dán vào MEMORY.md tổng (1 dòng trỏ)
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { processDir, MEM, START } from './build-index.mjs';
+import { acquireLock, releaseLock } from './khoa-vault.mjs';
+
+// 🔒 Script này LUÔN ghi file (tạo mảnh + cập INDEX) → khoá chống 2 phiên cùng máy đè nhau.
+const ROOT = dirname(MEM);
+acquireLock(ROOT);
+process.on('exit', () => releaseLock(ROOT));
 
 const VOCAB = ['live', 'wip', 'blocked', 'plan', 'research', 'maintain', 'done', 'reference', 'archived'];
 const [group, slug, desc, statusArg, typeArg] = process.argv.slice(2);
