@@ -5,3 +5,5 @@
 # *.proxy.example.com) KHÔNG cần liệt kê — hook tự bỏ qua.
 github.com
 api.moonshot.ai
+nodejs.org
+www.google.com

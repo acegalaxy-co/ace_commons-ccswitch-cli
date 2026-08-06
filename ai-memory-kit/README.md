@@ -1,5 +1,7 @@
 # MemoryOS
 
+> 🚀 **Cài nhanh nhất (khuyến nghị): [`CAI-DAT-1-LAN.md`](CAI-DAT-1-LAN.md)** — chạy `cai-dat.sh` **1 lần**, wire GLOBAL vào `~/.claude` → mọi project trên máy tự biết vault, không cần cài lại.
+>
 > 👉 **Mới nhận bộ này? NHẤP ĐÚP file [`HUONG-DAN.html`](HUONG-DAN.html)** — mở bằng trình duyệt, đọc là làm theo được (không cần biết kỹ thuật).
 >
 > 🔼 **Đã cài bản cũ (v1/v2) rồi?** Muốn lên bản mới mà KHÔNG mất dữ liệu → xem [`NANG-CAP.md`](NANG-CAP.md) (1 lệnh `node tools/nang-cap.mjs <thư-mục-của-bạn>`, tự sao lưu + giữ nguyên sổ tay & mảnh của bạn).
@@ -43,7 +45,8 @@ tools/                   engine (Node) + hook + snapshot:
   pre-work-nudge.mjs       hook nhắc tra Sổ Năng Lực trước việc lặp 🆕
   memory-autofix.mjs       hook tự khám + vá cuối mỗi lượt 🆕
   snapshot.sh              snapshot FIFO ra ngoài cây bộ nhớ
-  install-memory.sh        cài hook Claude Code 1 lệnh — đường chính cho người mới 🆕
+  cai-dat.sh               cài GLOBAL 1 lần vào ~/.claude — mặc định/khuyến nghị, xem CAI-DAT-1-LAN.md 🆕
+  install-memory.sh        cài hook per-project (settings.local.json) — nâng cao, khi cần khác vault cho từng repo
   dong-gop.mjs             gói phần KHUNG + tự quét rò → góp ngược lên nhóm
   test-fixes.mjs           test hồi quy cho engine (CRLF · SECRET_RE…) 🆕
 templates/               mẫu mảnh · INDEX nhóm · CLAUDE.md repo · tien-do (bảng tiến độ) · BACKLOG (điều phối đa-phiên)
