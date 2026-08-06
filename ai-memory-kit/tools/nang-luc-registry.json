@@ -1,0 +1,21 @@
+{
+  "_doc": "DANH MỤC NĂNG LỰC LẶP LẠI (hệ HỌC CHÉO). Một nguồn dùng cho 2 việc: (1) so-nang-luc.mjs lấy 'nhan' làm nhãn hiển thị; (2) pre-work-nudge.mjs lấy 'tu-khoa' để 'ngửi mùi việc lặp' trong prompt rồi nhắc tra Sổ. Gắn `capability: <slug>` (+ `do-tin: cao|vua|thap`) vào FRONTMATTER mảnh để Sổ tự gom. THÊM/BỚT năng lực = sửa danh sách dưới đây cho hợp lĩnh vực của bạn (đây chỉ là ví dụ phần mềm phổ biến). Đổi 'tu-khoa' sang tiếng của bạn để hook ngửi đúng. 🔧 ĐỒ NGHỀ CHẠY ĐƯỢC: ngoài 'capability' (cách DỰNG), gắn `cach-chay: <lệnh/đường-dẫn>` vào frontmatter mảnh nào mô tả 1 CÔNG CỤ có sẵn (trình quét/script/nút bấm) → so-nang-luc.mjs in thành bảng 'Đồ nghề chạy được' riêng. KHÔNG cần khai trong registry này (cach-chay là tự-do). Điều kiện vào tủ đồ nghề: tái-dùng-được + có lệnh chạy độc lập + do-tin ≥ vừa.",
+  "nangLuc": [
+    { "slug": "deploy", "nhan": "Deploy + migration DB", "tu-khoa": ["deploy", "migration", "go-live", "lên live", "lên prod", "ci/cd", "release"] },
+    { "slug": "rbac", "nhan": "Phân quyền nhiều vai (RBAC)", "tu-khoa": ["rbac", "phân quyền", "vai trò", "role", "permission", "phân vai"] },
+    { "slug": "auth", "nhan": "Đăng nhập / Auth", "tu-khoa": ["auth", "đăng nhập", "login", "jwt", "xác thực", "session", "đăng ký", "oauth"] },
+    { "slug": "multi-tenant", "nhan": "Đa-nhà (multi-tenant)", "tu-khoa": ["multi-tenant", "đa nhà", "đa-nhà", "tenant", "table_prefix", "org_id", "rls"] },
+    { "slug": "cms-site", "nhan": "Web CMS đa ngữ", "tu-khoa": ["cms", "trang chủ", "landing", "render từ db", "web giới thiệu"] },
+    { "slug": "i18n", "nhan": "Đa ngôn ngữ", "tu-khoa": ["i18n", "đa ngôn ngữ", "đa ngữ", "song ngữ", "localization"] },
+    { "slug": "seo", "nhan": "SEO + sitemap + analytics", "tu-khoa": ["seo", "sitemap", "robots", "canonical", "hreflang", "analytics"] },
+    { "slug": "storage-upload", "nhan": "Upload ảnh/file + Storage", "tu-khoa": ["upload", "storage", "tải ảnh", "tải file", "lưu ảnh", "đính kèm"] },
+    { "slug": "payments", "nhan": "Cổng thanh toán", "tu-khoa": ["thanh toán", "payment", "checkout", "hóa đơn", "invoice", "gateway"] },
+    { "slug": "feature-flag", "nhan": "Công tắc bật/tắt tính năng", "tu-khoa": ["feature flag", "feature-flag", "công tắc", "bật tắt", "tắt bật", "toggle", "feature gate"] },
+    { "slug": "autofix", "nhan": "Autofix / self-heal", "tu-khoa": ["autofix", "self-heal", "tự vá", "tự sửa", "hộp lỗi"] },
+    { "slug": "soft-delete", "nhan": "Thùng rác / xóa mềm", "tu-khoa": ["thùng rác", "xóa mềm", "soft delete", "trash", "khôi phục", "restore"] },
+    { "slug": "email", "nhan": "Email (SMTP/transactional)", "tu-khoa": ["email", "smtp", "gửi mail", "gửi email"] },
+    { "slug": "notification", "nhan": "Thông báo đa kênh", "tu-khoa": ["thông báo", "notification", "push", "sms", "telegram", "webhook"] },
+    { "slug": "ai-doc-read", "nhan": "AI đọc tài liệu / trích xuất", "tu-khoa": ["ocr", "trích xuất", "ai đọc", "đọc tài liệu", "bóc tách", "extract"] },
+    { "slug": "dev-live-env", "nhan": "Tách môi trường DEV/LIVE", "tu-khoa": ["dev/live", "môi trường", "staging", "config center", "env riêng"] }
+  ]
+}

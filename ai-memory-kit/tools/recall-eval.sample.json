@@ -1,0 +1,16 @@
+{
+  "_doc": "BỘ ĐO RECALL THỦ THƯ (mẫu). Chép sang Memories/_eval/recall-eval.json (chạy `node tools/eval-recall.mjs --init`) rồi THAY bằng câu hỏi & mảnh-vàng của BẠN. Mỗi câu: id · question (viết BẰNG TIẾNG NGƯỜI DÙNG THẬT, đừng dùng từ-khoá y hệt trong mảnh) · gold (tên/slug mảnh-vàng = đáp án đúng) · trap (loại bẫy). Nhồi đủ 4 LOẠI BẪY = đúng chỗ tra-cứu hay gãy. Viết ~18 câu để con số ổn định. Đo baseline → xé nhóm to / thêm `aliases:` → ĐO LẠI.",
+  "_loai-bay": {
+    "lech-tu": "Người hỏi dùng TỪ KHÁC với từ trong mảnh (vd hỏi 'tiền số' nhưng mảnh ghi 'điểm thưởng/xu') — bắt thiếu `aliases:`.",
+    "cross-group": "Mảnh nằm ở NHÓM KHÁC, từ hiếm, ít khi được tra tới.",
+    "nhom-to": "Nhiều mảnh cùng từ-khoá → thủ thư trả sai THỨ TỰ (precision thấp).",
+    "doi-chung-duong": "Câu hỏi khớp đúng từ mảnh — kiểm baseline (phải trúng)."
+  },
+  "k": 8,
+  "questions": [
+    { "id": "q1", "question": "Làm sao để trợ lý đừng lỡ tay xoá nhầm thứ quan trọng?", "gold": "vi-du-mảnh-an-toàn-xoá", "trap": "lech-tu" },
+    { "id": "q2", "question": "Trước khi chia kho kiến thức cho người ngoài thì cần làm gì?", "gold": "vi-du-mảnh-quét-rò-trước-chia", "trap": "cross-group" },
+    { "id": "q3", "question": "Quy tắc đặt tên mảnh và cách liên kết giữa các mảnh?", "gold": "vi-du-mảnh-quy-ước-mảnh", "trap": "nhom-to" },
+    { "id": "q4", "question": "Vì sao kit này không dùng vector database?", "gold": "vi-du-mảnh-vì-sao-file-first", "trap": "doi-chung-duong" }
+  ]
+}

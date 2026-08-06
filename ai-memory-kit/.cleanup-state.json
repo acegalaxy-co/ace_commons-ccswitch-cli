@@ -1,0 +1,6 @@
+{
+  "_": "Mốc đếm cho nhắc-dọn-tủ (cleanup-nudge.mjs đọc file này). Quy trình dọn ghi lại sau mỗi lần xong: count = số mảnh thật lúc đó, date = ngày dọn.",
+  "count": 1,
+  "date": "2026-01-01",
+  "lastRunNote": "Khởi tạo cùng bộ MemoryOS (chưa dọn lần nào)."
+}

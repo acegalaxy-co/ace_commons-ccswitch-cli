@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hướng dẫn — MemoryOS</title>
+<style>
+  :root { --ink:#1d2330; --muted:#5b6472; --line:#e6e9ef; --bg:#fbfcfe; --accent:#3b6ef5; --warn:#c9460f; --ok:#1a7f4b; --code:#f4f6fb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg); line-height:1.65; }
+  .wrap { max-width:820px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; margin:0 0 6px; letter-spacing:-.3px; }
+  h2 { font-size:21px; margin:38px 0 12px; padding-top:18px; border-top:1px solid var(--line); }
+  h3 { font-size:16px; margin:22px 0 6px; }
+  .lead { color:var(--muted); font-size:17px; margin:0 0 8px; }
+  .pill { display:inline-block; background:#eef3ff; color:var(--accent); font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px; }
+  code { background:var(--code); padding:2px 6px; border-radius:5px; font-size:13.5px; font-family:"SF Mono",Menlo,Consolas,monospace; }
+  pre { background:#0f1424; color:#e7ecf7; padding:14px 16px; border-radius:10px; overflow-x:auto; font-size:13px; line-height:1.55; }
+  pre code { background:none; color:inherit; padding:0; }
+  .step { display:flex; gap:14px; margin:16px 0; align-items:flex-start; }
+  .num { flex:0 0 30px; height:30px; border-radius:50%; background:var(--accent); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .step .body { flex:1; }
+  .step .body h3 { margin-top:2px; }
+  .box { border:1px solid var(--line); border-left:4px solid var(--accent); background:#fff; padding:12px 16px; border-radius:8px; margin:14px 0; }
+  .box.warn { border-left-color:var(--warn); background:#fff8f4; }
+  .box.ok { border-left-color:var(--ok); background:#f3fbf6; }
+  table { border-collapse:collapse; width:100%; margin:14px 0; font-size:14px; }
+  th,td { border:1px solid var(--line); padding:8px 11px; text-align:left; vertical-align:top; }
+  th { background:#f3f5fa; }
+  ul,ol { padding-left:22px; }
+  li { margin:5px 0; }
+  .muted { color:var(--muted); }
+  .foot { margin-top:50px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+  kbd { background:#fff; border:1px solid #c7ccd6; border-bottom-width:2px; border-radius:5px; padding:1px 6px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="pill">BỘ KHUNG — DÙNG NỘI BỘ</span>
+  <h1>Tủ bộ nhớ AI — Hướng dẫn dùng</h1>
+  <p class="lead">Giúp trợ lý AI <b>nhớ</b> quyết định, dự án &amp; cách bạn làm việc qua nhiều phiên — bằng các file chữ đọc-được, có kỷ luật, tự kiểm tra. Không cần cài database hay công cụ phức tạp.</p>
+
+  <div class="box ok">
+    <b>📦 Bộ này gồm 2 phần:</b>
+    <ul style="margin:6px 0 8px">
+      <li><b>Tủ ký ức AI</b> (thư mục gốc) — giúp trợ lý AI nhớ qua nhiều phiên. <i>Phần chính, hướng dẫn này nói về nó.</i></li>
+      <li><b>Dev Playbook</b> (thư mục <code>dev-playbook/</code>) — cẩm nang kỹ thuật + code mẫu cho <b>anh em dev</b> (deploy, bảo mật DB/RLS, feature-flag, rate-limit, CMS…). Mở khi dựng dự án mới.</li>
+    </ul>
+    <b>👉 Ai đọc gì:</b>
+    <table style="margin:6px 0 0">
+      <tr><th>Bạn là…</th><th>Làm gì</th></tr>
+      <tr><td>Mới nhận bộ này</td><td>Làm <b>5 bước ở Mục 2</b> bên dưới (hoặc nhờ AI làm hộ)</td></tr>
+      <tr><td>Đã cài bản cũ rồi</td><td>Chạy <code>node tools/nang-cap.mjs &lt;thư-mục-của-bạn&gt;</code> (ô ngay dưới) — giữ nguyên dữ liệu</td></tr>
+      <tr><td>Dev cần know-how kỹ thuật</td><td>Mở <code>dev-playbook/README.md</code></td></tr>
+      <tr><td>Học được cái hay, muốn góp ngược</td><td>Xem <code>CONTRIBUTING.md</code> (<code>tools/dong-gop.mjs</code>)</td></tr>
+    </table>
+  </div>
+
+  <div class="box">
+    <b>Mất ~15 phút để dựng.</b> Bạn cần có sẵn <code>Node.js</code> + <code>git</code> trên máy (Mac thường có git; Node tải ở <span class="muted">nodejs.org</span>).
+  </div>
+
+  <div class="box ok">
+    <b>🖱️ Không rành Terminal? Có nút bấm sẵn.</b> Trang HTML này (mở bằng trình duyệt) <b>không tự chạy lệnh máy được</b> (trình duyệt chặn vì an toàn) — nên các việc hay làm đã đóng thành <b>nút nhấp đúp</b> trong thư mục <code>nut-bam/</code>:
+    <ul style="margin:6px 0 0">
+      <li><b>1-Kham-tu</b> — kiểm + dọn tủ · <b>2-Nang-cap</b> — lên bản mới (giữ data) · <b>3-Dong-gop</b> — góp ngược cái hay</li>
+      <li>Mac: nhấp đúp file <code>.command</code> · Windows: file <code>.bat</code>. (Mac lần đầu báo chặn → chuột phải &gt; Open.)</li>
+    </ul>
+    Còn <b>cài MỚI từ đầu</b> (điền sổ tay) thì nhẹ nhất là <b>nhờ trợ lý AI làm hộ</b> — xem ô ở Mục 1.
+  </div>
+
+  <div class="box ok">
+    <b>🔼 Đã cài bản cũ rồi, muốn LÊN BẢN MỚI?</b> Đừng dựng lại từ đầu — chạy 1 lệnh trong thư mục kit mới:
+    <pre><code>node tools/nang-cap.mjs ~/MyMemory</code></pre>
+    Nó <b>tự sao lưu</b> tủ của bạn rồi chỉ cập nhật phần khung, <b>GIỮ NGUYÊN</b> sổ tay (<code>HANDBOOK.md</code>) + mảnh ký ức (<code>Memories/</code>) của bạn. Chi tiết: <code>NANG-CAP.md</code>.
+  </div>
+
+  <h2>1 · Đây là cái gì (1 phút)</h2>
+  <p>Trợ lý AI mỗi phiên mới là "mất trí nhớ". Bộ này cho nó một <b>tủ hồ sơ</b> gồm:</p>
+  <ul>
+    <li><b>Sổ tay (Tầng 0)</b> — bạn là ai, lằn ranh đỏ, cách bạn quyết &amp; làm việc. Nạp mỗi phiên.</li>
+    <li><b>Các mảnh ký ức</b> — mỗi việc/quyết định = 1 file nhỏ, xếp theo nhóm dự án.</li>
+    <li><b>Bộ công cụ tự động</b> — in mục lục, khám &amp; tự-vá tủ, in bảng tiến độ + sổ năng lực, nhắc dọn, chặn sửa ẩu.</li>
+  </ul>
+  <p class="muted">🆕 <b>Bản v3</b> thêm: <b>Sổ Năng Lực</b> (giúp AI "đã làm việc này rồi, tái dùng bản tốt nhất, đừng làm lại") + <b>Bảng Tiến Độ</b> (1 chỗ liếc việc nào đang làm/kẹt) + tự-vá lỗi tủ. Xem <code>docs/hoc-cheo-tu-bao-tri.md</code>.</p>
+  <p class="muted">Triết lý: <b>đọc nhanh — ghi chậm</b>. Bỏ công lúc ghi (đúng cấu trúc) để lúc đọc luôn nhẹ và đúng.</p>
+
+  <div class="box ok">
+    <b>⚡ Cách NHANH NHẤT (không rành kỹ thuật):</b> bạn <b>không cần tự gõ lệnh</b>. Bộ này luôn dùng kèm một <b>trợ lý AI</b> (vd Claude Code). Cứ đưa cả thư mục cho AI rồi nói:
+    <pre><code>"Đọc HUONG-DAN.html và docs/setup-guide.md trong thư mục này,
+rồi dựng tủ bộ nhớ giúp tôi: chạy các công cụ, nối 2 hook,
+và hỏi tôi từng mục để điền sổ tay."</code></pre>
+    AI sẽ tự chạy script + nối hook + phỏng vấn bạn để điền sổ tay. <span class="muted">5 bước dưới là để bạn HIỂU nó làm gì (hoặc tự làm nếu thích).</span>
+  </div>
+
+  <h2>2 · Cài đặt — 5 bước (hoặc nhờ AI làm hộ, xem ô trên)</h2>
+
+  <div class="step"><div class="num">1</div><div class="body">
+    <h3>Copy bộ này thành thư mục của bạn</h3>
+    <p>Đổi tên cả thư mục thành ví dụ <code>MyMemory</code>, để ở đâu tuỳ bạn (vd trong iCloud Drive để đồng bộ nhiều máy).</p>
+  </div></div>
+
+  <div class="step"><div class="num">2</div><div class="body">
+    <h3>Điền sổ tay</h3>
+    <p>Đổi tên file <code>HANDBOOK.template.md</code> → <code>HANDBOOK.md</code>, mở ra điền các mục có dấu ⚙️: bạn là ai, lằn ranh đỏ, nguyên tắc làm việc, cách muốn được trả lời.</p>
+    <div class="box" style="margin:8px 0"><b>💡 Lười viết từ đầu?</b> Mở <code>PRINCIPLES.md</code> — thư viện <b>nguyên tắc-vàng mẫu</b> (cách làm việc với AI: trung thực báo cáo, điều-tra-trước-khẳng-định, khuôn trả lời rõ ràng…). Chép cái nào thấy đúng vào <code>HANDBOOK.md</code> rồi sửa cho hợp bạn.</div>
+    <p>Mở <code>Memories/MEMORY.md</code> sửa danh sách nhóm cho khớp. Xoá nhóm <code>SampleProject</code> (chỉ là ví dụ).</p>
+  </div></div>
+
+  <div class="step"><div class="num">3</div><div class="body">
+    <h3>Tạo dự án &amp; mảnh đầu tiên</h3>
+    <ul>
+      <li>Nhóm mới = 1 thư mục trong <code>Memories/</code> + 1 file <code>INDEX.md</code> (chép mẫu trong <code>templates/</code>).</li>
+      <li>Mảnh mới = gõ 1 lệnh <code>node tools/ghi-manh.mjs &lt;Nhóm&gt; &lt;tên&gt; "&lt;mô tả&gt;"</code> — máy tự tạo file đúng chuẩn + thêm vào mục lục. (Hoặc chép tay <code>templates/piece.template.md</code> — <b>mỗi mảnh 1 ý</b>.)</li>
+    </ul>
+  </div></div>
+
+  <div class="step"><div class="num">4</div><div class="body">
+    <h3>Chạy thử công cụ</h3>
+    <p>Mở Terminal, vào thư mục bộ nhớ rồi gõ:</p>
+    <pre><code>node tools/build-index.mjs --all --write   <span class="muted"># in lại mục lục từ các mảnh</span>
+node tools/memory-doctor.mjs --fix         <span class="muted"># khám + tự vá + lưu lịch sử + in bảng tiến độ &amp; sổ năng lực</span></code></pre>
+    <p>Thấy dòng <b>🟢 TỦ BỘ NHỚ KHOẺ</b> là xong. (Bác sĩ cũng tạo sẵn <code>Memories/TIEN-DO.md</code> + <code>Memories/SO-NANG-LUC.md</code> cho bạn liếc.)</p>
+  </div></div>
+
+  <div class="step"><div class="num">5</div><div class="body">
+    <h3>Nối các nút tự động vào trợ lý AI</h3>
+    <p>Nếu dùng <b>Claude Code</b>: vào file cấu hình <code>settings.json</code>, thêm các hook:</p>
+    <table>
+      <tr><th>Khi nào</th><th>Chạy gì</th><th>Để làm</th></tr>
+      <tr><td>Đầu phiên (SessionStart)</td><td><code>node …/tools/cleanup-nudge.mjs</code></td><td>Nhắc dọn tủ + nhắc đúc-kết khi tới hẹn</td></tr>
+      <tr><td>Trước khi sửa file (PreToolUse)</td><td><code>node …/tools/handbook-gate.mjs</code></td><td>Chặn sửa bộ nhớ khi AI chưa đọc sổ tay</td></tr>
+      <tr><td>🆕 Khi bạn gửi câu lệnh (UserPromptSubmit)</td><td><code>node …/tools/pre-work-nudge.mjs</code></td><td>Việc lặp lại → nhắc tra Sổ Năng Lực để tái dùng</td></tr>
+      <tr><td>🆕 Cuối mỗi lượt (Stop)</td><td><code>node …/tools/memory-autofix.mjs</code></td><td>Tự khám + vá tủ, lỗi không dồn lại</td></tr>
+    </table>
+    <p class="muted">2 hook đầu là cốt lõi; 2 hook 🆕 là tự-động nâng cao (bỏ qua vẫn chạy được). Chi tiết &amp; biến môi trường: <code>docs/setup-guide.md</code>. Không dùng Claude Code cũng được — chỉ cần trợ lý AI đọc được file trong thư mục.</p>
+  </div></div>
+
+  <h2>3 · Dùng hằng ngày (chỉ 2 câu lệnh)</h2>
+  <table>
+    <tr><th>Bạn nói với AI</th><th>Nó làm</th></tr>
+    <tr><td><b>"đọc bộ nhớ"</b> / "vào dự án X"</td><td>Nạp sổ tay + mục lục → mở đúng nhóm → mở đúng mảnh (đọc từ nhẹ tới sâu, không nuốt cả tủ).</td></tr>
+    <tr><td><b>"ghi bộ nhớ"</b></td><td>Lưu việc vừa làm thành 1 mảnh nhỏ đúng nhóm; nguyên tắc quan trọng thì chắt lên sổ tay.</td></tr>
+  </table>
+  <p>Định kỳ (tủ tích nhiều) → nhờ AI <b>dọn tủ</b>: nó quét trùng/mâu thuẫn rồi trình bảng cho bạn duyệt, <i>bạn gật mới sửa</i>.</p>
+
+  <h2>4 · Cách giữ tủ luôn đúng (tự động lo)</h2>
+  <ul>
+    <li><b>Mục lục tự in</b> — trạng thái mỗi việc chỉ ghi 1 chỗ; mục lục là báo cáo in lại → không bao giờ lệch.</li>
+    <li><b>Lịch sử lùi được</b> — mỗi phiên tự lưu 1 bản (như "máy thời gian"); lỡ tay vẫn quay lại được.</li>
+    <li><b>Bác sĩ tủ</b> — tự bắt &amp; <b>tự vá</b> mục lục cũ, nhãn thiếu, mảnh bị bỏ quên; báo link gãy, file rác.</li>
+    <li>🆕 <b>Bảng tiến độ</b> (<code>TIEN-DO.md</code>) — liếc 1 chỗ biết việc nào đang làm / bị kẹt / để lâu, và 2 phiên có giẫm chân nhau không.</li>
+    <li>🆕 <b>Sổ năng lực</b> (<code>SO-NANG-LUC.md</code>) — "việc lặp lại này đã làm bản tốt nhất ở đâu" → AI tái dùng thay vì dựng lại từ đầu.</li>
+  </ul>
+
+  <div class="box warn">
+    <b>⚠️ An toàn — đọc kỹ:</b>
+    <ul style="margin:6px 0 0">
+      <li><b>KHÔNG ghi mật khẩu/token trần</b> vào tủ. Để chúng ở <b>két riêng NGOÀI thư mục bộ nhớ</b> + file <code>.env</code>; trong tủ chỉ ghi "khoá này ở đâu". (Công cụ sẽ <b>tự chặn</b> nếu phát hiện secret.)</li>
+      <li>Nếu để tủ trên iCloud/Drive: chỉ để <b>file chữ</b>, đừng để mã nguồn/<code>.git</code> trong đó (gây hỏng).</li>
+    </ul>
+  </div>
+
+  <h2>5 · Tuỳ chọn nâng cao (khi cần)</h2>
+  <div class="box ok" style="margin-top:6px">
+    <ul style="margin:6px 0 0">
+      <li><b>🛠️ Dev Playbook (cho người code):</b> mở <code>dev-playbook/README.md</code> — 10 bài cẩm nang kỹ thuật + code mẫu sẵn (<code>snippets/</code>): deploy an toàn, bảo mật DB (RLS), feature-flag bật/tắt, rate-limit, khuôn CMS web đa ngữ, an-toàn Git… Dựng dự án mới đỡ phát minh lại. KHÁC tủ ký ức (đây là code/hạ tầng).</li>
+      <li><b>🔁 Học được cái hay → góp ngược cho cả nhóm:</b> chạy nút <b>3-Dong-gop</b> (hoặc <code>node tools/dong-gop.mjs "đề xuất"</code>) — nó gói <b>chỉ phần khung</b> bạn cải tiến + <b>tự quét rò chặn dữ liệu riêng/secret</b> → bạn <b>bỏ gói vào thư mục Google Drive chung "MemoryOS - Đóng góp"</b> (link trong <code>CONTRIBUTING.md</code>) → maintainer duyệt + merge → ra bản mới cho mọi người. Vòng 2 chiều: nâng-cấp (xuống) ↔ đóng-góp (lên).</li>
+      <li><b>👀 Xem tủ bằng Obsidian:</b> muốn <i>nhìn</i> mạng lưới ký ức dạng sơ đồ? Cài <b>Obsidian</b> (miễn phí) → "Open folder as vault" → trỏ vào thư mục bộ nhớ → bật <b>Graph view</b>. Tủ đã cấu hình sẵn (<code>.obsidian/</code>). Chỉ để bạn xem; AI vẫn dùng tủ như cũ.</li>
+      <li><b>👥 Nhiều phiên AI cùng làm:</b> mở nhiều cửa sổ/người cùng lúc → đọc <code>docs/multi-session.md</code> + dùng 1 file <code>_Backlog.md</code> chung (mẫu trong <code>templates/</code>) để không giẫm chân nhau.</li>
+    </ul>
+  </div>
+
+  <h2>❓ Hỏi nhanh (đọc cho rõ kỳ vọng)</h2>
+  <table>
+    <tr><th>Câu hỏi</th><th>Trả lời thẳng</th></tr>
+    <tr><td>Bấm 1 nút là xong hết?</td><td><b>Không.</b> Nút bấm lo phần <b>vận hành lặp lại</b> (kiểm tủ · nâng cấp · đóng góp). Còn <b>cài mới</b> phải <b>điền sổ tay</b> (bạn là ai, nguyên tắc) + <b>nối hook</b> — việc này không nút nào làm thay được vì là nội dung RIÊNG của bạn. Nhẹ nhất: <b>nhờ AI làm hộ</b> (ô Mục 1).</td></tr>
+    <tr><td>Sao file HTML này không có nút chạy?</td><td>Trình duyệt <b>cấm</b> trang web tự chạy lệnh máy (bảo mật). Nên nút để ở <code>nut-bam/</code> (nhấp đúp ngoài trình duyệt), không nhúng trong HTML được.</td></tr>
+    <tr><td>Lên bản mới có mất dữ liệu không?</td><td><b>Không.</b> Nút <b>2-Nang-cap</b> tự sao lưu + chỉ thay phần khung, giữ nguyên <code>HANDBOOK.md</code> + <code>Memories/</code> của bạn.</td></tr>
+    <tr><td>Dùng Windows được không?</td><td>Được. Mỗi nút có bản <code>.bat</code> (Windows) cạnh bản <code>.command</code> (Mac). Cần cài <b>Node.js</b> trước.</td></tr>
+    <tr><td>Có cần internet / database không?</td><td>Không. Toàn file chữ (markdown) + vài script Node chạy trên máy. Không vector DB, không dịch vụ ngoài.</td></tr>
+    <tr><td>Mac báo "unidentified developer" khi bấm nút?</td><td>Lần đầu: <b>chuột phải vào file &gt; Open</b> (chỉ 1 lần). Hoặc System Settings &gt; Privacy &amp; Security &gt; Open Anyway.</td></tr>
+  </table>
+
+  <h2>6 · Có gì trong bộ này</h2>
+  <pre><code>HANDBOOK.template.md   Sổ tay AI (điền của bạn)
+PRINCIPLES.md          Thư viện nguyên tắc-vàng MẪU (chép vào sổ tay)
+Memories/              Tủ ký ức: mục lục tổng + các nhóm + ví dụ
+.obsidian/             Cấu hình sẵn để mở bằng Obsidian (xem sơ đồ)
+tools/                 các công cụ (in mục lục · bác sĩ · bảng tiến độ · sổ năng lực · tạo mảnh · 4 hook · snapshot)
+templates/             mẫu mảnh · mục lục nhóm · CLAUDE.md · tien-do (bảng tiến độ) · BACKLOG (đa-phiên)
+docs/                  methodology (triết lý) · setup-guide (chi tiết) · multi-session · hoc-cheo-tu-bao-tri · giao-thuc-lam-viec-ai
+dev-playbook/          🛠️ CẨM NANG KỸ THUẬT cho dev: 10 bài + code mẫu (snippets/) — KHÁC tủ ký ức
+nut-bam/               🖱️ NÚT NHẤP ĐÚP (.command Mac / .bat Win): khám tủ · nâng cấp · đóng góp
+NANG-CAP.md            hướng dẫn NÂNG CẤP cho người đã cài bản cũ
+CONTRIBUTING.md        cách GÓP NGƯỢC cái hay về cho cả nhóm
+README.md              tóm tắt
+HUONG-DAN.html         ← file bạn đang đọc</code></pre>
+
+  <div class="box ok">
+    <b>✅ Bắt đầu từ đâu?</b> Làm theo <b>5 bước ở Mục 2</b>. Vướng chỗ nào mở <code>docs/setup-guide.md</code> đọc kỹ hơn. Muốn hiểu <i>vì sao thiết kế vậy</i> → <code>docs/methodology.md</code>.
+  </div>
+
+  <div class="foot">
+    Bộ khung rỗng — không kèm dữ liệu của ai. Cứ sửa cho hợp bạn. · Tủ bộ nhớ AI (file-first, không cần vector DB).
+  </div>
+
+</div>
+</body>
+</html>
