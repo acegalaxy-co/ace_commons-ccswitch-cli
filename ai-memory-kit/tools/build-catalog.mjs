@@ -28,7 +28,7 @@ function isCanonical(v) {
 
 // Đọc frontmatter (êm nếu thiếu — không crash) + suy tên/description dự phòng như build-index.mjs.
 function parseFM(text, file) {
-  const lines = text.split('\n');
+  const lines = text.replace(/\r\n/g, '\n').split('\n'); // CRLF-tolerant: \r sót lại làm gãy '---' exact-match + regex $ cuối dòng
   let fm = {};
   if (lines[0] && lines[0].trim() === '---') {
     const end = lines.indexOf('---', 1);

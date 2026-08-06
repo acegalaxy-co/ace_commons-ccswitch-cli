@@ -24,6 +24,7 @@ const ACTIVE = ['blocked', 'wip', 'live']; // trạng thái "đang nóng" — đ
 const ICON = { blocked: '🔴', wip: '🟡', live: '🟢', plan: '📐', research: '🔬', maintain: '🧰', done: '✅', reference: '📚', archived: '🗄️', _unknown: '•' };
 
 function parse(txt, file) {
+  txt = txt.replace(/\r\n/g, '\n'); // CRLF-tolerant: \r sót lại làm gãy '\n---' exact-match + regex $ cuối dòng
   const fm = {};
   if (txt.startsWith('---')) {
     const end = txt.indexOf('\n---', 3);

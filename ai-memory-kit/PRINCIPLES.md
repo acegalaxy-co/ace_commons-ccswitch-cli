@@ -139,7 +139,7 @@
 45. **Đừng để MÁY CÁ NHÂN gánh "tim" của một business.** Việc tự-động-hóa là mạch sống (cron, nhắc hẹn, đối soát…) thì đặt nơi chạy **theo bản chất**: việc rule-based → scheduler trên cloud (không phụ thuộc máy ai bật/tắt); AI phục vụ khách trong app → khóa API có trần chi tiêu; AI đốt-token nhiều muốn né phí API → agent headless trên **tài khoản phụ đặt ở server**. Máy cá nhân ngủ = cron im lặng = rủi ro lớn nhất; và sản phẩm bán ra không thể để "bộ não" chạy trên máy của một người.
 
 ## C+++++ Chạy nhẹ · trạng-thái-việc · dev an-toàn · kiểm-soát-agent (v4.0)
-> 9 nguyên tắc đúc thêm khi vận hành ở nhịp nhanh nhiều-phiên. Generic, bê thẳng được. Chi tiết: `docs/chay-bo-nho-nhe-tiet-kiem-token.md` · `docs/trang-thai-cong-viec-6-nac.md` · `dev-playbook/25–27` · `ai-patterns/07–08`.
+> 9 nguyên tắc đúc thêm khi vận hành ở nhịp nhanh nhiều-phiên. Generic, bê thẳng được. Chi tiết: `docs/chay-bo-nho-nhe-tiet-kiem-token.md` · `docs/trang-thai-cong-viec-6-nac.md` · `addons/dev-playbook/25–27` · `addons/ai-patterns/07–08`.
 
 46. **Đọc bộ nhớ NHẸ mặc định — Tầng-0 phải MỎNG.** Mỗi phiên chỉ nạp **phân tầng**: Tầng-0 (sổ tay + mục lục tổng) → INDEX nhóm khi vào 1 dự án → mảnh đúng việc; chỉ "nạp hết" khi được yêu cầu rõ. Tầng-0 nạp MỌI phiên nên phải rẻ: giữ **mục lục + trỏ mảnh**, đẩy chi tiết/lịch sử XUỐNG mảnh; phình thì **nén Tầng-0** (bỏ chữ thừa, giữ nguyên mọi con trỏ + luật). Bổ trợ #35 (token hao từ nhóm/mảnh phình, không từ Tầng-0).
 

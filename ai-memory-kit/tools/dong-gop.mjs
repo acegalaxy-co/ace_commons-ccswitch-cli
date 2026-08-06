@@ -26,8 +26,9 @@ const desc = args.find((a, i) => !a.startsWith('--') && i !== bIdx + 1) || '';
 
 // KHUNG (chia chung được). KHÔNG có HANDBOOK.md / Memories/ / .obsidian / .state ở đây — đó là dữ liệu riêng.
 const FW_FILES = ['PRINCIPLES.md', 'HANDBOOK.template.md', 'README.md', 'CHANGELOG.md', 'HUONG-DAN.html', 'VERSION', 'NANG-CAP.md'];
-const FW_DIRS = ['tools', 'docs', 'templates', 'dev-playbook', 'nut-bam', 'ai-patterns', 'skills'];
-const SECRET_RE = /sbp_[a-z0-9]{20}|eyJhbGciOiJ[A-Za-z0-9_-]{30}|postgres(ql)?:\/\/[^:/ ]{2,}:[^@ /]{8,}@|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}/;
+const FW_DIRS = ['tools', 'docs', 'templates', 'addons', 'nut-bam'];
+// giữ đồng bộ với memory-doctor.mjs SECRET_RE (cùng nguồn pattern, chỉ khác cú pháp RegExp literal vs chuỗi grep -E)
+const SECRET_RE = /sbp_[a-z0-9]{20}|eyJhbGciOiJ[A-Za-z0-9_-]{30}|(postgres(ql)?|mysql|mongodb(\+srv)?|redis|amqp):\/\/[^/\s:]+:[^@\s]+@|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|sk_live_[A-Za-z0-9]{10,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|[Bb]earer\s+[A-Za-z0-9_.=-]{20,}/;
 
 // Thu thập file KHUNG (đệ quy thư mục) — relative path so với ROOT.
 function walk(dir, rel, out) {

@@ -26,6 +26,7 @@ const TIN_TXT = { cao: '🟢 cao', vua: '🟡 vừa', thap: '🔴 thấp', '': '
 const ALIVE = ['live', 'maintain', 'reference', 'done'];   // "còn dùng được" mới được làm BẢN CHUẨN; loại wip/blocked/plan/research/archived
 
 function parse(txt, file) {
+  txt = txt.replace(/\r\n/g, '\n'); // CRLF-tolerant: \r sót lại làm gãy '\n---' exact-match + regex $ cuối dòng
   const fm = {};
   if (txt.startsWith('---')) {
     const end = txt.indexOf('\n---', 3);

@@ -26,7 +26,7 @@ const MAP = [
 ];
 
 function inject(text, caps, tin) {
-  const lines = text.split('\n');
+  const lines = text.replace(/\r\n/g, '\n').split('\n'); // CRLF-tolerant: \r sót lại làm gãy '---' exact-match
   if (lines[0].trim() !== '---') return { changed: false, reason: 'KHÔNG có frontmatter' };
   const end = lines.indexOf('---', 1);
   if (end < 1) return { changed: false, reason: 'frontmatter không đóng' };

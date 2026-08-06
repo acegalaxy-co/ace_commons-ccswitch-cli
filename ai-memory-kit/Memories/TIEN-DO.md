@@ -4,7 +4,7 @@
 > ĐỪNG sửa tay phần dưới (giữa 2 marker) — `node tools/tien-do.mjs --write` (hoặc memory-doctor đầu phiên) sẽ làm tươi.
 
 <!-- TỰ SINH: node tien-do.mjs --write -->
-<!-- in lúc 2026-08-06 04:35 · 1 mảnh · stale = wip/blocked > 3 ngày chưa đụng -->
+<!-- in lúc 2026-08-06 06:02 · 1 mảnh · stale = wip/blocked > 3 ngày chưa đụng -->
 
 ## 🔥 ĐANG LÀM / BỊ CHẶN (0)
 _(không có mảnh wip/blocked/live)_

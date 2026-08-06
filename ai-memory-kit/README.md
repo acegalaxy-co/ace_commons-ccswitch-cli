@@ -6,9 +6,11 @@
 >
 > 🔁 **Học được cái hay, muốn góp ngược cho cả nhóm?** Xem [`CONTRIBUTING.md`](CONTRIBUTING.md) (`node tools/dong-gop.mjs "đề xuất"` — chỉ gói phần KHUNG + tự quét rò chặn dữ liệu riêng). Vòng 2 chiều: `nang-cap` (xuống) ↔ `dong-gop` (lên).
 >
-> 🛠️ **Dev?** Repo còn kèm [`dev-playbook/`](dev-playbook/README.md) — cẩm nang kỹ thuật tái dùng (deploy · Supabase/RLS · feature-flag · rate-limit · CMS · **chất-lượng 4-lưới · audit-log · đối-soát-import · giám-sát-job · gotchas · trunk · cổng-đăng-nhập · RBAC · harness-E2E · kiểm-thử-hình-ảnh**…) + code mẫu.
+> 🛠️ **Dev?** Repo còn kèm [`addons/dev-playbook/`](addons/dev-playbook/README.md) — cẩm nang kỹ thuật tái dùng (deploy · Supabase/RLS · feature-flag · rate-limit · CMS · **chất-lượng 4-lưới · audit-log · đối-soát-import · giám-sát-job · gotchas · trunk · cổng-đăng-nhập · RBAC · harness-E2E · kiểm-thử-hình-ảnh**…) + code mẫu.
 >
-> 🤖 **Xây tính năng AI?** [`ai-patterns/`](ai-patterns/README.md) — mẫu thiết kế: vòng-học human-in-the-loop · liên-kết-luồng · red-team trước go-live. 🧰 **Muốn "đội rà soát"?** [`skills/`](skills/README.md) — 4 slash-command đã rửa: `/ra-soat` · `/kiem-thu` · `/hoi-dong` · `/don-tu`.
+> 🤖 **Xây tính năng AI?** [`addons/ai-patterns/`](addons/ai-patterns/README.md) — mẫu thiết kế: vòng-học human-in-the-loop · liên-kết-luồng · red-team trước go-live. 🧰 **Muốn "đội rà soát"?** [`addons/skills/`](addons/skills/README.md) — 4 slash-command đã rửa: `/ra-soat` · `/kiem-thu` · `/hoi-dong` · `/don-tu`.
+
+Kit này ưu tiên **bộ nhớ NGHIỆP VỤ** (business rules) dùng chung nhiều dự án; đồ kỹ thuật dev/AI-engineering nằm ở `addons/` (optional, không nạp mặc định).
 
 Bộ khung **trí nhớ cho trợ lý AI** bằng file markdown đọc-được — có kỷ luật, tự kiểm tra, không cần vector DB. Cho cá nhân/team tự dựng "tủ ký ức" riêng để AI nhớ quyết định, dự án, cách làm việc qua nhiều phiên.
 
@@ -41,11 +43,15 @@ tools/                   engine (Node) + hook + snapshot:
   pre-work-nudge.mjs       hook nhắc tra Sổ Năng Lực trước việc lặp 🆕
   memory-autofix.mjs       hook tự khám + vá cuối mỗi lượt 🆕
   snapshot.sh              snapshot FIFO ra ngoài cây bộ nhớ
+  install-memory.sh        cài hook Claude Code 1 lệnh — đường chính cho người mới 🆕
+  dong-gop.mjs             gói phần KHUNG + tự quét rò → góp ngược lên nhóm
+  test-fixes.mjs           test hồi quy cho engine (CRLF · SECRET_RE…) 🆕
 templates/               mẫu mảnh · INDEX nhóm · CLAUDE.md repo · tien-do (bảng tiến độ) · BACKLOG (điều phối đa-phiên)
 docs/                    methodology · setup-guide · multi-session · hoc-cheo-tu-bao-tri · giao-thuc-lam-viec-ai · do-recall-thu-thu · chay-bo-nho-nhe-tiet-kiem-token (tiết kiệm token) · trang-thai-cong-viec-6-nac (task-state 6 nấc) 🆕
-dev-playbook/            cẩm nang kỹ thuật tái dùng (31 bài + snippets) — deploy·RLS·flag·chất-lượng·audit·gotchas·trunk·toàn-vẹn-tiền·che-PII/KYC·cảnh-báo·chống-trùng·CI-rẻ·monitor·dev-bypass-go-live·robot-tự-vá·dựng-để-bàn-giao·cổng-đăng-nhập·RBAC·harness-E2E·kiểm-thử-hình-ảnh 🆕
-ai-patterns/             mẫu xây tính năng AI: vòng-học · liên-kết-luồng · red-team · connector-MCP · nơi-chạy-tự-động-hóa · điểm-cắm · kiểm-soát-agent · chống-tiêm-lệnh 🆕
-skills/                  4 slash-command đã rửa: /ra-soat /kiem-thu /hoi-dong /don-tu 🆕
+addons/                  🧰 optional, KHÔNG nạp mặc định — xem addons/README.md
+  dev-playbook/            cẩm nang kỹ thuật tái dùng (31 bài + snippets) — deploy·RLS·flag·chất-lượng·audit·gotchas·trunk·toàn-vẹn-tiền·che-PII/KYC·cảnh-báo·chống-trùng·CI-rẻ·monitor·dev-bypass-go-live·robot-tự-vá·dựng-để-bàn-giao·cổng-đăng-nhập·RBAC·harness-E2E·kiểm-thử-hình-ảnh
+  ai-patterns/             mẫu xây tính năng AI: vòng-học · liên-kết-luồng · red-team · connector-MCP · nơi-chạy-tự-động-hóa · điểm-cắm · kiểm-soát-agent · chống-tiêm-lệnh
+  skills/                  4 slash-command đã rửa: /ra-soat /kiem-thu /hoi-dong /don-tu
 ```
 
 ## Quickstart

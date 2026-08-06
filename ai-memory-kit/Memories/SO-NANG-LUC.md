@@ -6,7 +6,7 @@
 > 🥇 BẢN CHUẨN = mảnh `do-tin: cao` + còn sống (live/maintain), mới nhất. 🔴 `do-tin: thap` = CHƯA kiểm → tái dùng phải CẢNH BÁO.
 
 <!-- TỰ SINH: node so-nang-luc.mjs --write -->
-<!-- in lúc 2026-08-06 04:35 · quét 1 mảnh · 1 có 'capability:' · 1 năng lực · 0 đồ nghề -->
+<!-- in lúc 2026-08-06 06:02 · quét 1 mảnh · 1 có 'capability:' · 1 năng lực · 0 đồ nghề -->
 
 ## 🔎 Tra nhanh (1 liếc)
 

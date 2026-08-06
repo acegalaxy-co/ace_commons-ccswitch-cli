@@ -109,7 +109,7 @@ const rootMd = readdirSync(ROOT).filter(x => x.endsWith('.md')).map(f => ({ g: '
 
 // Đọc frontmatter thô
 function readFM(text) {
-  const lines = text.split('\n');
+  const lines = text.replace(/\r\n/g, '\n').split('\n'); // CRLF-tolerant: \r sót lại làm gãy '---' exact-match + regex $ cuối dòng
   if (lines[0].trim() !== '---') return null;
   const end = lines.indexOf('---', 1);
   if (end < 0) return null;
@@ -241,7 +241,8 @@ if (SNAP) {
     // Secret phải nằm ở KÉT RIÊNG (ngoài cây bộ nhớ → backup không hút); trong bộ nhớ chỉ để stub/tham chiếu.
     // ⚙️ Thêm pattern secret riêng của bạn vào SECRET_RE nếu cần; SECRET_SKIP loại file MÔ TẢ pattern.
     const blockedBySecret = (() => {
-      const SECRET_RE = "sbp_[a-z0-9]{20}|eyJhbGciOiJ[A-Za-z0-9_-]{30}|postgres(ql)?://[^:/ ]{2,}:[^@ /]{8,}@|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}";
+      // giữ đồng bộ với dong-gop.mjs SECRET_RE (cùng nguồn pattern, chỉ khác cú pháp nhúng chuỗi vs RegExp literal)
+      const SECRET_RE = "sbp_[a-z0-9]{20}|eyJhbGciOiJ[A-Za-z0-9_-]{30}|(postgres(ql)?|mysql|mongodb(\\+srv)?|redis|amqp)://[^/[:space:]:]+:[^@[:space:]]+@|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|sk_live_[A-Za-z0-9]{10,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|[Bb]earer[[:space:]]+[A-Za-z0-9_.=-]{20,}";
       const SECRET_SKIP = ""; // ⚙️ vd: --exclude='ten-file-chinh-sach.md' cho file MÔ TẢ pattern (khỏi báo nhầm)
       const sec = spawnSync('sh', ['-c', `grep -rlE '${SECRET_RE}' "${ROOT}" --include='*.md' --include='*.json' ${SECRET_SKIP} 2>/dev/null`]);
       const hits = String(sec.stdout).trim();

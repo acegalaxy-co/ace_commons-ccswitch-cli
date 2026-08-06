@@ -45,7 +45,7 @@ console.log(`🔼 Nâng cấp: bản ${ver(DEST)} → bản ${ver(SRC)}\n`);
 // 2) Cập nhật phần KHUNG
 const PRESERVE = new Set(['nang-luc-registry.json', 'moi-so-nang-luc.mjs']); // cấu hình người dùng đã sửa → chỉ chép nếu THIẾU
 const OVERWRITE_FILES = ['PRINCIPLES.md', 'README.md', 'CHANGELOG.md', 'HUONG-DAN.html', 'HANDBOOK.template.md', 'VERSION'];
-const OVERWRITE_DIRS = ['docs', 'templates', 'dev-playbook', 'nut-bam', 'ai-patterns', 'skills'];
+const OVERWRITE_DIRS = ['docs', 'templates', 'addons', 'nut-bam'];
 const COPY_IF_MISSING_DIRS = ['.obsidian'];
 
 let nTool = 0, nKept = 0, nAdded = 0;

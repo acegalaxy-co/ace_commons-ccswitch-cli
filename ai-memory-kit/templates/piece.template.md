@@ -16,6 +16,11 @@ QUY TẮC 1 MẢNH = 1 Ý (atomic). Mảnh quá to / nhiều ý → tách.
 - type: project | reference | feedback | user
 - LIÊN KẾT mảnh khác bằng [[ten-manh-khac]] (theo TÊN, đổi nhóm vẫn sống).
   ⚠️ Nếu tên file TRÙNG ở nhiều nhóm (vd INDEX, tien-do) → ghi rõ [[Nhom/ten]], ĐỪNG để [[ten]] trần (trỏ nhầm/gãy âm thầm).
+
+Field frontmatter optional (thêm khi cần, không bắt buộc):
+# capability: <slug>        ← optional: gắn năng lực lặp lại (xem tools/nang-luc-registry.json) để Sổ Năng Lực gom
+# do-tin: cao|vua|thap      ← optional: độ tin của bản này
+# cach-chay: <lệnh>         ← optional: mảnh là công-cụ-chạy-được thì ghi lệnh chạy
 -->
 
 Nội dung mảnh ở đây. Với loại feedback/quyết định, nên có:

@@ -6,7 +6,7 @@
 Mỗi file `.md` ở đây = 1 slash-command. Chép vào thư mục lệnh của trợ lý AI của bạn (vd Claude Code: `~/.claude/commands/`), rồi gọi `/<tên>` trong phiên. (Cũng dùng được như tài liệu quy trình nếu trợ lý của bạn không có slash-command.)
 
 ```bash
-cp skills/*.md ~/.claude/commands/      # ví dụ với Claude Code
+cp addons/skills/*.md ~/.claude/commands/      # ví dụ với Claude Code
 ```
 
 ## Có gì

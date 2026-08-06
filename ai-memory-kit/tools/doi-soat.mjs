@@ -55,7 +55,7 @@ function shaExistsInGit(root, sha) {
 }
 
 function readFM(text) {
-  const lines = text.split('\n');
+  const lines = text.replace(/\r\n/g, '\n').split('\n'); // CRLF-tolerant: \r sót lại làm gãy '---' exact-match + regex $ cuối dòng
   if (!lines[0] || lines[0].trim() !== '---') return null;
   const end = lines.indexOf('---', 1);
   if (end < 0) return null;
