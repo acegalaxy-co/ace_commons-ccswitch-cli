@@ -20,6 +20,20 @@ volumes or running containers.
 
 ## Steps
 
+0. **Project guard — verify repo identity before any SSH/cloud/git production action.**
+   - Expected project slug: `@@PROJECT_SLUG@@` (deploy host `@@DEPLOY_SSH_HOST@@`, service `@@DEPLOY_SERVICE@@`).
+   - Compute repo-root slug from `basename "$(git rev-parse --show-toplevel)"` (lowercase,
+     non-alnum → `-`) and require it to match `@@PROJECT_SLUG@@`.
+   - Read `git config --get remote.origin.url`. Missing origin → STOP; production commands require
+     `origin` to prove repo identity.
+   - Extract origin repo basename from SSH/HTTPS URL (`git@host:org/repo.git` or
+     `https://host/org/repo.git`), strip `.git`, slugify it the same way, and require it to match
+     `@@PROJECT_SLUG@@`.
+   - Any mismatch → STOP immediately, tell the user this command belongs to `@@PROJECT_SLUG@@`, current
+     repo/root/origin is `<repo name>` — not running cleanup. No override.
+   - If any config used by this command is still placeholder-shaped (`<...>`) — `@@DEPLOY_SSH_HOST@@`, `@@DEPLOY_SERVICE@@`, `@@DEPLOY_HEALTHCHECK@@` — STOP;
+     deploy config is incomplete (re-run install.sh with HARNESS_DEPLOY_* env vars).
+
 1. **Assess disk + reclaimable space.**
    ```bash
    ssh -o ConnectTimeout=15 @@DEPLOY_SSH_HOST@@ 'echo "=== DISK ==="; df -h / | tail -1; echo; echo "=== DOCKER DF ==="; docker system df'

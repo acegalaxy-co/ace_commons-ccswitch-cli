@@ -20,6 +20,20 @@ must never take down its neighbors. This command snapshots state before, verifie
 
 ## Steps
 
+0. **Project guard — verify repo identity before any SSH/cloud/git production action.**
+   - Expected project slug: `ccswitch-cli-claude` (deploy host `<deploy-ssh-host>`, service `<service-name>`).
+   - Compute repo-root slug from `basename "$(git rev-parse --show-toplevel)"` (lowercase,
+     non-alnum → `-`) and require it to match `ccswitch-cli-claude`.
+   - Read `git config --get remote.origin.url`. Missing origin → STOP; production commands require
+     `origin` to prove repo identity.
+   - Extract origin repo basename from SSH/HTTPS URL (`git@host:org/repo.git` or
+     `https://host/org/repo.git`), strip `.git`, slugify it the same way, and require it to match
+     `ccswitch-cli-claude`.
+   - Any mismatch → STOP immediately, tell the user this command belongs to `ccswitch-cli-claude`, current
+     repo/root/origin is `<repo name>` — not running deploy. No override.
+   - If any config used by this command is still placeholder-shaped (`<...>`) — `<deploy-ssh-host>`, `<service-name>`, `<remote-repo-path>`, `<healthcheck-cmd>` — STOP;
+     deploy config is incomplete (re-run install.sh with HARNESS_DEPLOY_* env vars).
+
 1. **Verify branch + working tree.**
    - `git branch --show-current` must be `dev`. If not, tell the user to merge into
      `dev` first — do not proceed.

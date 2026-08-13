@@ -333,6 +333,15 @@ if [ "$SEL_DEPLOY" -eq 1 ]; then
   install_file "commands/production-deploy.md"  ".claude/commands/production-deploy.md"
   install_file "commands/production-cleanup.md" ".claude/commands/production-cleanup.md"
   install_file "commands/production-reboot.md"  ".claude/commands/production-reboot.md"
+  deploy_config_incomplete=0
+  for deploy_config_value in "$DEPLOY_SSH_HOST" "$DEPLOY_SERVICE" "$DEPLOY_PATH" "$DEPLOY_HEALTHCHECK"; do
+    case "$deploy_config_value" in
+      \<*\>) deploy_config_incomplete=1 ;;
+    esac
+  done
+  if [ "$deploy_config_incomplete" -eq 1 ]; then
+    echo "  ⚠ Deploy config chưa đầy đủ — /production-* sẽ tự STOP (project guard). Set HARNESS_DEPLOY_SSH_HOST/HARNESS_DEPLOY_SERVICE/HARNESS_DEPLOY_PATH/HARNESS_DEPLOY_HEALTHCHECK rồi chạy lại để kích hoạt."
+  fi
 fi
 
 if [ "$SEL_SKILLS" -eq 1 ]; then

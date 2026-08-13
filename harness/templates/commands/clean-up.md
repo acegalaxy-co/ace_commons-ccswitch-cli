@@ -50,7 +50,7 @@ Quy ước args:
 1. Đọc rule trong scope trước khi action: project scope, git workflow, secrets/vault, feature safety.
 2. Parse worker count từ args. Default `10`; accepted forms: `workers=N`, `--workers N`, `--workers=N`, `agents=N`, `subagents=N`; clamp `1..20`; invalid fallback `10`.
 3. Xác nhận branch hiện tại bằng `git branch --show-current`.
-   - Nếu không phải `dev` và user không chỉ định branch/worktree riêng: dừng, báo mismatch.
+   - Nếu không phải `@@BRANCH@@` và user không chỉ định branch/worktree riêng: dừng, báo mismatch.
 4. Audit repo status:
    ```sh
    git status --short
