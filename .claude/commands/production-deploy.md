@@ -21,30 +21,32 @@ must never take down its neighbors. This command snapshots state before, verifie
 ## Steps
 
 0. **Project guard — verify repo identity before any SSH/cloud/git production action.**
-   - Expected project slug: `ccswitch-cli-claude` (deploy host `<deploy-ssh-host>`, service `<service-name>`).
+   - Expected project slug: `ccswitch-cli-claude`; expected remote identity: `github.com/acegalaxy-co/ace_commons-ccswitch-cli`
+     (sanitized `host/owner/repo`, lowercase; deploy host `<deploy-ssh-host>`, service `<service-name>`).
    - Compute repo-root slug from `basename "$(git rev-parse --show-toplevel)"` (lowercase,
      non-alnum → `-`) and require it to match `ccswitch-cli-claude`.
-   - Read `git config --get remote.origin.url`. Missing origin → STOP; production commands require
-     `origin` to prove repo identity.
-   - Extract origin repo basename from SSH/HTTPS URL (`git@host:org/repo.git` or
-     `https://host/org/repo.git`), strip `.git`, slugify it the same way, and require it to match
-     `ccswitch-cli-claude`.
-   - Any mismatch → STOP immediately, tell the user this command belongs to `ccswitch-cli-claude`, current
-     repo/root/origin is `<repo name>` — not running deploy. No override.
+   - Read `git config --get remote.origin.url`, but never print or persist the raw URL. Missing origin → STOP.
+   - Sanitize origin to lowercase `host/owner/repo`: support `git@host:org/repo.git`,
+     `https://[userinfo@]host/org/repo.git`, and `ssh://[userinfo@]host/org/repo.git`; strip userinfo,
+     leading slash, and trailing `.git`.
+   - Require sanitized origin identity to exactly match `github.com/acegalaxy-co/ace_commons-ccswitch-cli`. If expected identity
+     is placeholder-shaped (`<...>`), origin is unparseable, repo-root slug mismatches, or remote identity
+     mismatches → STOP immediately; tell the user this command belongs to `ccswitch-cli-claude` / `github.com/acegalaxy-co/ace_commons-ccswitch-cli`,
+     current repo/root/origin is `<repo identity>` — not running deploy. No override.
    - If any config used by this command is still placeholder-shaped (`<...>`) — `<deploy-ssh-host>`, `<service-name>`, `<remote-repo-path>`, `<healthcheck-cmd>` — STOP;
      deploy config is incomplete (re-run install.sh with HARNESS_DEPLOY_* env vars).
 
 1. **Verify branch + working tree.**
-   - `git branch --show-current` must be `dev`. If not, tell the user to merge into
-     `dev` first — do not proceed.
+   - `git branch --show-current` must be `main`. If not, tell the user to merge into
+     `main` first — do not proceed.
    - `git status --short` — warn if dirty (uncommitted work won't be deployed).
-   - **Commits to ship:** `git log origin/dev..dev --oneline`.
+   - **Commits to ship:** `git log origin/main..main --oneline`.
      Empty → tell the user there's nothing to deploy and stop.
 
 2. **Confirm (prod, downtime-causing — pause for user OK unless pre-authorized in the prompt).**
    Print:
    - Commits to ship (from step 1, count + one-liner each).
-   - Change type: code/runtime · config · docs · mix (`git diff origin/dev..dev --stat`).
+   - Change type: code/runtime · config · docs · mix (`git diff origin/main..main --stat`).
    - Impact: rebuild + restart `<service-name>` → short downtime on that service only.
    Wait for explicit user OK before proceeding, unless the user's request already pre-authorized
    an end-to-end run.
@@ -60,8 +62,8 @@ must never take down its neighbors. This command snapshots state before, verifie
 
 4. **Push + deploy.**
    ```bash
-   git push origin dev
-   ssh <deploy-ssh-host> 'cd <remote-repo-path> && (bash bootstrap.sh || (git pull origin dev && docker compose up -d --build <service-name>))'
+   git push origin main
+   ssh <deploy-ssh-host> 'cd <remote-repo-path> && (bash bootstrap.sh || (git pull origin main && docker compose up -d --build <service-name>))'
    ```
    Use whichever exists on the host — a `bootstrap.sh` (pull + rebuild + up in place) if the repo has
    one, else `git pull` + `docker compose up -d --build <service-name>` directly. Either way this

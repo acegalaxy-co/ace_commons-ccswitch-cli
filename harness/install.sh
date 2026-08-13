@@ -51,7 +51,7 @@ read_dotenv_var() { # read_dotenv_var <VAR_NAME> <default>
   printf '%s' "${val:-$default}"
 }
 GEMINI_MODEL_DEFAULT="${HARNESS_GEMINI_MODEL_DEFAULT:-$(read_dotenv_var GEMINI_MODEL gemini-3.5-flash)}"
-CODEX_MODEL_DEFAULT="${HARNESS_CODEX_MODEL_DEFAULT:-$(read_dotenv_var CODEX_MODEL gpt-5.5)}"
+CODEX_MODEL_DEFAULT="${HARNESS_CODEX_MODEL_DEFAULT:-$(read_dotenv_var CODEX_MODEL gpt-5.6-terra)}"
 DEEPSEEK_MODEL_DEFAULT="${HARNESS_DEEPSEEK_MODEL_DEFAULT:-$(read_dotenv_var DEEPSEEK_MODEL openai/ds/deepseek-v4-pro)}"
 
 command -v jq >/dev/null 2>&1 || { echo "❌ 'jq' required. Install: brew install jq (mac) / apt install jq (linux)"; exit 1; }
@@ -145,6 +145,23 @@ DEPLOY_BRANCH="${HARNESS_DEPLOY_BRANCH:-$BRANCH}"
 DEPLOY_REMOTE="${HARNESS_DEPLOY_REMOTE:-origin}"
 DEPLOY_HEALTHCHECK="${HARNESS_DEPLOY_HEALTHCHECK:-<healthcheck-cmd>}"
 
+sanitize_remote_id() { # sanitize_remote_id <remote-url> → host/owner/repo lowercase, or placeholder
+  local raw="$1" id host path
+  case "$raw" in
+    ssh://*|http://*|https://*) id="${raw#*://}"; id="${id##*@}"; host="${id%%/*}"; path="${id#*/}" ;;
+    *@*:*) id="${raw#*@}"; host="${id%%:*}"; path="${id#*:}" ;;
+    *) host=""; path="" ;;
+  esac
+  path="${path#/}"
+  path="${path%.git}"
+  if [ -n "$host" ] && [ -n "$path" ] && [ "$path" != "$host" ]; then
+    printf '%s/%s' "$host" "$path" | tr '[:upper:]' '[:lower:]'
+  else
+    printf '<project-remote-id>'
+  fi
+}
+PROJECT_REMOTE_ID="$(sanitize_remote_id "$(git -C "$ROUTE_DIR" config --get remote.origin.url 2>/dev/null || true)")"
+
 join_by() { local d="$1"; shift; local IFS="$d"; printf '%s' "$*"; }
 
 build_core_dirs() {
@@ -228,6 +245,7 @@ substitute_file() {
     line="${line//@@CORE_DIRS_HUMAN@@/$CORE_DIRS_HUMAN}"
     line="${line//@@CORE_DIRS_YAML@@/$CORE_DIRS_YAML}"
     line="${line//@@PROJECT_SLUG@@/$PROJECT_SLUG}"
+    line="${line//@@PROJECT_REMOTE_ID@@/$PROJECT_REMOTE_ID}"
     line="${line//@@BRANCH@@/$BRANCH}"
     line="${line//@@TEST_CMD@@/$TEST_CMD_PHRASE}"
     line="${line//@@GEMINI_MODEL_DEFAULT@@/$GEMINI_MODEL_DEFAULT}"
