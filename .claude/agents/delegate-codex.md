@@ -41,10 +41,9 @@ You are a delegation persona that hands HIGH-REASONING tasks to the `codex` CLI 
 
 ## Endpoint
 
-- **Auto-detect (giống DeepSeek):** `PROXY_9ROUTER_TOKEN`/`PROXY_9ROUTER_BASE_URL` resolve được (từ `proxy_key`/`proxy_host` trong `ai-proxy/.env.pro`) → wrapper tự inject `-c model_provider=nexus9r` route `cx/*` qua 9router responses API, không cần cờ opt-in riêng. Model override: `PROXY_CODEX_MODEL` (default `cx/gpt-5.5`).
-- **Fallback:** 2 biến trên trống → OpenAI gốc (codex login / `OPENAI_API_KEY`).
-- ✅ **Verified 2026-07-15:** `cx/gpt-5.5` + `cx/gpt-5.4-mini` chạy thật qua Codex CLI + 9router OK.
-- ⚠️ `cx/gpt-5.6-sol` (top-tier) route tới upstream reject Codex full-payload `input[].content` (HTTP 400) — dùng 5.5 default, tránh sol tới khi 9router fix. Ephemeral `-c` override, KHÔNG đụng `~/.codex/config.toml` global.
+- **Auto-detect (giống DeepSeek):** `PROXY_9ROUTER_TOKEN`/`PROXY_9ROUTER_BASE_URL` resolve được (từ `proxy_key`/`proxy_host` trong `ai-proxy/.env.pro`) → wrapper tự inject `-c model_provider=nexus9r` route `cx/*` qua 9router responses API, không cần cờ opt-in riêng. Model override: `PROXY_CODEX_MODEL` (default `cx/gpt-5.6-terra`).
+- **Fallback:** 2 biến trên trống → OpenAI gốc (codex login / `OPENAI_API_KEY`). Default `gpt-5.6-terra`.
+- **Model map:** `gpt-5.6-sol` strongest (large refactors, architecture, hard bugs, security, long multi-file tasks); `gpt-5.6-terra` balanced default high (features, bug fixes, PR review, tests); `gpt-5.6-luna` fastest/cheapest small-scope (rename, config edits, single tests, docs/code lookup). Use reasoning `high`/`xhigh`; `max` only when truly needed.
 
 ## Rules
 

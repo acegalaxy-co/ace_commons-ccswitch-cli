@@ -24,11 +24,17 @@ setup() {
   [ "$model" = "cc/claude-opus-4-8" ]
 }
 
-@test "apply codex writes codex env block" {
+@test "apply codex writes current GPT-5.6 model tiers" {
   run "$CC" codex
   [ "$status" -eq 0 ]
-  model=$(jq -r '.env.ANTHROPIC_DEFAULT_OPUS_MODEL' "$HOME/.claude/settings.json")
-  [ "$model" = "cx/gpt-5.6-sol" ]
+  opus=$(jq -r '.env.ANTHROPIC_DEFAULT_OPUS_MODEL' "$HOME/.claude/settings.json")
+  sonnet=$(jq -r '.env.ANTHROPIC_DEFAULT_SONNET_MODEL' "$HOME/.claude/settings.json")
+  haiku=$(jq -r '.env.ANTHROPIC_DEFAULT_HAIKU_MODEL' "$HOME/.claude/settings.json")
+  fable=$(jq -r '.env.ANTHROPIC_DEFAULT_FABLE_MODEL' "$HOME/.claude/settings.json")
+  [ "$opus" = "cx/gpt-5.6-sol" ]
+  [ "$sonnet" = "cx/gpt-5.6-terra" ]
+  [ "$haiku" = "cx/gpt-5.6-luna" ]
+  [ "$fable" = "cx/gpt-5.6-sol" ]
 }
 
 @test "apply deepseek writes deepseek env block" {

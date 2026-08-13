@@ -166,7 +166,7 @@ Subagent implement KHÔNG được là subagent review — người viết có b
 
 **Integration verify (BẮT BUỘC sau merge nhiều worktree):** mỗi mảnh verify pass riêng ≠ ghép lại chạy đúng. Sau merge ≥2 worktree cùng task, PHẢI chạy verify tích hợp (test/build/smoke của project) trên branch đã ghép TRƯỚC khi coi task xong hoặc commit tổng. Fail → xử lý như REVISE: chẩn đoán mảnh lệch, vòng execute mới — KHÔNG merge đè tiếp.
 
-**Reasoning-effort knob (Codex):** task khó → `-c model_reasoning_effort="high|xhigh"` trong sub-task prompt (per-call, không đổi default wrapper). Smoke/lint nhẹ → `low`.
+**Reasoning-effort knob (Codex):** model map: `gpt-5.6-sol` strongest (large refactors, architecture, hard bugs, security, long multi-file tasks); `gpt-5.6-terra` balanced default high (features, bug fixes, PR review, tests); `gpt-5.6-luna` fastest small-scope (rename, config edits, single tests, docs/code lookup). Task khó → `-c model_reasoning_effort="high|xhigh"` trong sub-task prompt; `max` chỉ khi thật cần. Smoke/lint nhẹ → `low`.
 
 ## Loop guard (hard rules)
 
