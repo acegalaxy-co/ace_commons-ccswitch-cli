@@ -7,3 +7,4 @@ github.com
 api.moonshot.ai
 nodejs.org
 www.google.com
+obsidian.md

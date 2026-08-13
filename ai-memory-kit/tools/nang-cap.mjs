@@ -10,7 +10,6 @@
 //   • CHỈ GHI ĐÈ phần KHUNG: tools/ (engine+hook) · docs/ · templates/ · PRINCIPLES.md · README.md
 //       · CHANGELOG.md · HUONG-DAN.html · HANDBOOK.template.md · VERSION.
 //   • GIỮ NGUYÊN cấu hình bạn đã sửa: tools/nang-luc-registry.json · tools/moi-so-nang-luc.mjs
-//       · .obsidian/ (chỉ chép nếu bạn CHƯA có).
 //   • TUYỆT ĐỐI KHÔNG đụng: HANDBOOK.md (sổ tay bạn điền) · Memories/ (mảnh của bạn) · file .state.
 import { existsSync, mkdirSync, cpSync, readdirSync, readFileSync } from 'node:fs';
 import { join, dirname, basename, resolve } from 'node:path';
@@ -45,8 +44,8 @@ console.log(`🔼 Nâng cấp: bản ${ver(DEST)} → bản ${ver(SRC)}\n`);
 // 2) Cập nhật phần KHUNG
 const PRESERVE = new Set(['nang-luc-registry.json', 'moi-so-nang-luc.mjs']); // cấu hình người dùng đã sửa → chỉ chép nếu THIẾU
 const OVERWRITE_FILES = ['PRINCIPLES.md', 'README.md', 'CHANGELOG.md', 'HUONG-DAN.html', 'HANDBOOK.template.md', 'VERSION'];
-const OVERWRITE_DIRS = ['docs', 'templates', 'nut-bam'];
-const COPY_IF_MISSING_DIRS = ['.obsidian'];
+const OVERWRITE_DIRS = ['docs', 'templates'];
+const COPY_IF_MISSING_DIRS = [];
 
 let nTool = 0, nKept = 0, nAdded = 0;
 mkdirSync(join(DEST, 'tools'), { recursive: true });

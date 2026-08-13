@@ -5,6 +5,8 @@ Bỏ `addons/` (dev-playbook + ai-patterns + skills) — nội dung kỹ thuật
 
 - `handbook-gate.mjs` +cache TTL-free (`tmpdir()/handbook-gate-ok-<hash transcript_path>`) — phiên đã chứng minh đọc HANDBOOK 1 lần thì các Edit/Write sau trong phiên đó pass ngay, khỏi đọc lại full transcript mỗi lần (giảm P2 latency).
 - Thêm `tools/khoa-vault.mjs` (`acquireLock`/`releaseLock`, mkdir atomic + stale-break 10 phút + fail-open) — wire vào mọi đường WRITE (`memory-doctor.mjs --fix`, `build-index.mjs --write`, `tien-do.mjs --write`, `so-nang-luc.mjs --write`, `ghi-manh.mjs`, `moi-so-nang-luc.mjs --write`) chống 2 phiên CÙNG MÁY đè ghi lẫn nhau; đa-máy qua Drive sync vẫn KHÔNG được bảo vệ (xem `docs/multi-session.md`).
+- **Bỏ `nut-bam/`** (7 nút nhấp đúp Mac/.command + Win/.bat) và **`.github/workflows/secret-scan.yml`** — quyết định tinh gọn kit (Terminal + nhờ AI làm hộ đủ dùng, CI riêng do người dùng tự chọn). `nang-cap.mjs`/`dong-gop.mjs` bỏ `nut-bam` khỏi phạm vi; docs (README/HUONG-DAN.html/NANG-CAP.md/setup-guide/methodology) bỏ hết câu ref nút bấm + `.obsidian/` có sẵn (dir cấu hình Obsidian cũng đã bị xoá — giờ hướng dẫn tự cài Obsidian rồi "Open folder as vault", không nhắc config sẵn).
+- Vá 2 P2 audit: `moi-so-nang-luc.mjs` MAP sửa slug dev sót (`feature-flag`→`pricing` khớp registry+sample-decision.md; 2 dòng ví dụ comment cũng đổi sang slug nghiệp vụ). `khoa-vault.mjs` `acquireLock` đăng ký handler `SIGINT`/`SIGTERM` nhả khoá trước khi thoát — chống orphan lock khi script bị Ctrl-C hoặc kill giữa chừng.
 
 ## v4.1 — 2026-07-10
 Đào thêm **cụm kiến thức generic** đúc từ đợt vận hành nhiều dự án 09–10/07 (đã rửa sạch danh tính) — mở rộng Dev Playbook + 2 công cụ đối-soát mới + siết Tầng-0.

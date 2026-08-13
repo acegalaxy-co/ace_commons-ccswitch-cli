@@ -20,6 +20,9 @@ export function acquireLock(root, { retries = 5, staleMs = 10 * 60 * 1000 } = {}
     try {
       mkdirSync(lockPath);
       writeFileSync(infoPath, JSON.stringify({ pid: process.pid, ts: Date.now(), host: hostname() }), 'utf8');
+      const bye = (sig) => { releaseLock(root); process.exit(sig === 'SIGINT' ? 130 : 143); };
+      process.once('SIGINT', () => bye('SIGINT'));
+      process.once('SIGTERM', () => bye('SIGTERM'));
       return true;
     } catch (e) {
       if (e.code !== 'EEXIST') return true; // lỗi lạ (vd không quyền) → fail-open, đừng kẹt việc

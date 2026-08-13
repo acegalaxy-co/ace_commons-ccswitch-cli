@@ -22,9 +22,9 @@ if (WRITE) { acquireLock(ROOT); process.on('exit', () => releaseLock(ROOT)); }
 // file (tương đối trong Memories/) · các năng lực mảnh này thể hiện · độ tin (cao|vua|thap)
 // 👇 ĐÂY LÀ VÍ DỤ — thay bằng các mảnh thật của bạn rồi chạy lại.
 const MAP = [
-  { file: 'SampleProject/sample-decision.md', caps: ['feature-flag'], tin: 'vua' },
-  // { file: 'YourProject/deploy-recipe.md',   caps: ['deploy'],       tin: 'cao' },
-  // { file: 'YourProject/auth-setup.md',      caps: ['auth', 'rbac'], tin: 'cao' },
+  { file: 'SampleProject/sample-decision.md', caps: ['pricing'], tin: 'vua' },
+  // { file: 'YourProject/vendor-recipe.md',   caps: ['vendor-selection'],          tin: 'cao' },
+  // { file: 'YourProject/onboarding.md',      caps: ['onboarding-sop', 'hiring'],  tin: 'cao' },
 ];
 
 function inject(text, caps, tin) {

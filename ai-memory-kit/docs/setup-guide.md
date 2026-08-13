@@ -66,7 +66,7 @@ Trong `settings.json` của trợ lý (mọi hook đều fail-open / không ch�
 Nếu bạn mở nhiều cửa sổ/agent cùng làm trên 1 kho → đọc `docs/multi-session.md` + tạo `Memories/_Backlog.md` theo `templates/BACKLOG.template.md`. Cốt lõi: đồng-bộ-trước-khi-làm · 1 việc=1 nhánh · nhận-việc-trước-khi-làm · xong-báo-3-thứ · WIP=1.
 
 ## Bước 8 — Xem bằng Obsidian (tùy chọn)
-Cây bộ nhớ này đã là Obsidian vault chuẩn (có sẵn `.obsidian/`). Muốn *nhìn* mạng lưới ký ức: cài [Obsidian](https://obsidian.md) (miễn phí) → **Open folder as vault** → trỏ vào thư mục bộ nhớ → bật **Graph view**. Chỉ để con người xem; AI vẫn đọc kho theo phân tầng.
+Cây bộ nhớ này dùng markdown + `[[wikilink]]` chuẩn — mở được bằng Obsidian. Muốn *nhìn* mạng lưới ký ức: cài [Obsidian](https://obsidian.md) (miễn phí) → **Open folder as vault** → trỏ vào thư mục bộ nhớ → bật **Graph view**. Chỉ để con người xem; AI vẫn đọc kho theo phân tầng.
 
 ## Lằn ranh an toàn (đọc kỹ)
 - ❗ **KHÔNG để secret trần** trong cây bộ nhớ — để ở **két riêng NGOÀI** cây (git mirror sẽ DỪNG nếu thấy secret).

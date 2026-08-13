@@ -100,7 +100,7 @@ Mỗi nhóm nên có 1 file `tien-do` = bảng ✅/🔄/⏳ + nhật ký phiên 
 ---
 
 ## Xem bằng Obsidian (tùy chọn)
-Cây bộ nhớ này **đã là một Obsidian vault chuẩn** (markdown + `[[wikilink]]` + frontmatter, có sẵn `.obsidian/`). Muốn *nhìn* mạng lưới ký ức: cài [Obsidian](https://obsidian.md) (miễn phí) → **Open folder as vault** → trỏ vào thư mục bộ nhớ → bật **Graph view**. Đây chỉ để CON NGƯỜI xem/lần theo liên kết; AI vẫn dùng kho theo cách đọc phân tầng. Không bắt buộc.
+Cây bộ nhớ này dùng **markdown + `[[wikilink]]` + frontmatter chuẩn Obsidian**. Muốn *nhìn* mạng lưới ký ức: cài [Obsidian](https://obsidian.md) (miễn phí) → **Open folder as vault** → trỏ vào thư mục bộ nhớ → bật **Graph view**. Đây chỉ để CON NGƯỜI xem/lần theo liên kết; AI vẫn dùng kho theo cách đọc phân tầng. Không bắt buộc.
 
 > ⚠️ **Luật link khi tên file trùng nhau:** nếu cùng một tên file xuất hiện ở nhiều nhóm (vd `INDEX`, `tien-do`), wikilink BẮT BUỘC ghi rõ đường dẫn: `[[Nhóm/tien-do]]`, KHÔNG để `[[tien-do]]` trần (kẻo trỏ nhầm / gãy âm thầm). Tên file **duy nhất toàn kho** thì cứ `[[tên]]` thuần như thường.
 

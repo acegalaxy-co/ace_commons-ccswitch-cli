@@ -23,7 +23,7 @@ node tools/nang-cap.mjs ~/MyMemory
 Lệnh này sẽ:
 1. 💾 **Tự sao lưu** cả tủ của bạn sang `~/MyMemory-backup-<ngày-giờ>` (không xoá gì).
 2. ✅ **Ghi đè** phần KHUNG: `tools/` (engine + hook), `docs/`, `templates/`, `PRINCIPLES.md`, `README.md`, `CHANGELOG.md`, `HUONG-DAN.html`, `HANDBOOK.template.md`, `VERSION`.
-3. 🛟 **Giữ cấu hình của bạn:** `tools/nang-luc-registry.json`, `tools/moi-so-nang-luc.mjs`, `.obsidian/` (chỉ chép nếu bạn chưa có).
+3. 🛟 **Giữ cấu hình của bạn:** `tools/nang-luc-registry.json`, `tools/moi-so-nang-luc.mjs`.
 4. 🔒 **KHÔNG đụng:** `HANDBOOK.md` (sổ tay bạn điền) · `Memories/` (mảnh của bạn) · file trạng thái.
 
 ## Cách 3 — Nếu bạn cài bằng `git clone`

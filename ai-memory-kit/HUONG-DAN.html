@@ -62,12 +62,7 @@
   </div>
 
   <div class="box ok">
-    <b>🖱️ Không rành Terminal? Có nút bấm sẵn.</b> Trang HTML này (mở bằng trình duyệt) <b>không tự chạy lệnh máy được</b> (trình duyệt chặn vì an toàn) — nên các việc hay làm đã đóng thành <b>nút nhấp đúp</b> trong thư mục <code>nut-bam/</code>:
-    <ul style="margin:6px 0 0">
-      <li><b>1-Kham-tu</b> — kiểm + dọn tủ · <b>2-Nang-cap</b> — lên bản mới (giữ data) · <b>3-Dong-gop</b> — góp ngược cái hay</li>
-      <li>Mac: nhấp đúp file <code>.command</code> · Windows: file <code>.bat</code>. (Mac lần đầu báo chặn → chuột phải &gt; Open.)</li>
-    </ul>
-    Còn <b>cài MỚI từ đầu</b> (điền sổ tay) thì nhẹ nhất là <b>nhờ trợ lý AI làm hộ</b> — xem ô ở Mục 1.
+    <b>🖱️ Không rành Terminal?</b> Nhẹ nhất là <b>nhờ trợ lý AI làm hộ</b> — xem ô ở Mục 1. Việc lặp lại (kiểm tủ · nâng cấp · góp ngược) chạy qua lệnh <code>node tools/...</code> trong Terminal, nhờ AI gõ hộ được.
   </div>
 
   <div class="box ok">
@@ -165,8 +160,8 @@ node tools/memory-doctor.mjs --fix         <span class="muted"># khám + tự v�
   <h2>5 · Tuỳ chọn nâng cao (khi cần)</h2>
   <div class="box ok" style="margin-top:6px">
     <ul style="margin:6px 0 0">
-      <li><b>🔁 Học được cái hay → góp ngược cho cả nhóm:</b> chạy nút <b>3-Dong-gop</b> (hoặc <code>node tools/dong-gop.mjs "đề xuất"</code>) — nó gói <b>chỉ phần khung</b> bạn cải tiến + <b>tự quét rò chặn dữ liệu riêng/secret</b> → bạn <b>bỏ gói vào thư mục Google Drive chung "MemoryOS - Đóng góp"</b> (link trong <code>CONTRIBUTING.md</code>) → maintainer duyệt + merge → ra bản mới cho mọi người. Vòng 2 chiều: nâng-cấp (xuống) ↔ đóng-góp (lên).</li>
-      <li><b>👀 Xem tủ bằng Obsidian:</b> muốn <i>nhìn</i> mạng lưới ký ức dạng sơ đồ? Cài <b>Obsidian</b> (miễn phí) → "Open folder as vault" → trỏ vào thư mục bộ nhớ → bật <b>Graph view</b>. Tủ đã cấu hình sẵn (<code>.obsidian/</code>). Chỉ để bạn xem; AI vẫn dùng tủ như cũ.</li>
+      <li><b>🔁 Học được cái hay → góp ngược cho cả nhóm:</b> chạy <code>node tools/dong-gop.mjs "đề xuất"</code> — nó gói <b>chỉ phần khung</b> bạn cải tiến + <b>tự quét rò chặn dữ liệu riêng/secret</b> → bạn <b>bỏ gói vào thư mục Google Drive chung "MemoryOS - Đóng góp"</b> (link trong <code>CONTRIBUTING.md</code>) → maintainer duyệt + merge → ra bản mới cho mọi người. Vòng 2 chiều: nâng-cấp (xuống) ↔ đóng-góp (lên).</li>
+      <li><b>👀 Xem tủ bằng Obsidian:</b> muốn <i>nhìn</i> mạng lưới ký ức dạng sơ đồ? Cài <b>Obsidian</b> (miễn phí) → "Open folder as vault" → trỏ vào thư mục bộ nhớ. Chỉ để bạn xem; AI vẫn dùng tủ như cũ.</li>
       <li><b>👥 Nhiều phiên AI cùng làm:</b> mở nhiều cửa sổ/người cùng lúc → đọc <code>docs/multi-session.md</code> + dùng 1 file <code>_Backlog.md</code> chung (mẫu trong <code>templates/</code>) để không giẫm chân nhau.</li>
     </ul>
   </div>
@@ -174,23 +169,19 @@ node tools/memory-doctor.mjs --fix         <span class="muted"># khám + tự v�
   <h2>❓ Hỏi nhanh (đọc cho rõ kỳ vọng)</h2>
   <table>
     <tr><th>Câu hỏi</th><th>Trả lời thẳng</th></tr>
-    <tr><td>Bấm 1 nút là xong hết?</td><td><b>Không.</b> Nút bấm lo phần <b>vận hành lặp lại</b> (kiểm tủ · nâng cấp · đóng góp). Còn <b>cài mới</b> phải <b>điền sổ tay</b> (bạn là ai, nguyên tắc) + <b>nối hook</b> — việc này không nút nào làm thay được vì là nội dung RIÊNG của bạn. Nhẹ nhất: <b>nhờ AI làm hộ</b> (ô Mục 1).</td></tr>
-    <tr><td>Sao file HTML này không có nút chạy?</td><td>Trình duyệt <b>cấm</b> trang web tự chạy lệnh máy (bảo mật). Nên nút để ở <code>nut-bam/</code> (nhấp đúp ngoài trình duyệt), không nhúng trong HTML được.</td></tr>
-    <tr><td>Lên bản mới có mất dữ liệu không?</td><td><b>Không.</b> Nút <b>2-Nang-cap</b> tự sao lưu + chỉ thay phần khung, giữ nguyên <code>HANDBOOK.md</code> + <code>Memories/</code> của bạn.</td></tr>
-    <tr><td>Dùng Windows được không?</td><td>Được. Mỗi nút có bản <code>.bat</code> (Windows) cạnh bản <code>.command</code> (Mac). Cần cài <b>Node.js</b> trước.</td></tr>
+    <tr><td>Chạy 1 lệnh là xong hết?</td><td><b>Không.</b> Lệnh Terminal lo phần <b>vận hành lặp lại</b> (kiểm tủ · nâng cấp · đóng góp). Còn <b>cài mới</b> phải <b>điền sổ tay</b> (bạn là ai, nguyên tắc) + <b>nối hook</b> — việc này không script nào làm thay được vì là nội dung RIÊNG của bạn. Nhẹ nhất: <b>nhờ AI làm hộ</b> (ô Mục 1).</td></tr>
+    <tr><td>Sao file HTML này không tự chạy lệnh được?</td><td>Trình duyệt <b>cấm</b> trang web tự chạy lệnh máy (bảo mật). Chạy lệnh trong Terminal (nhờ AI gõ hộ nếu ngại), không nhúng trong HTML được.</td></tr>
+    <tr><td>Lên bản mới có mất dữ liệu không?</td><td><b>Không.</b> <code>node tools/nang-cap.mjs</code> tự sao lưu + chỉ thay phần khung, giữ nguyên <code>HANDBOOK.md</code> + <code>Memories/</code> của bạn.</td></tr>
     <tr><td>Có cần internet / database không?</td><td>Không. Toàn file chữ (markdown) + vài script Node chạy trên máy. Không vector DB, không dịch vụ ngoài.</td></tr>
-    <tr><td>Mac báo "unidentified developer" khi bấm nút?</td><td>Lần đầu: <b>chuột phải vào file &gt; Open</b> (chỉ 1 lần). Hoặc System Settings &gt; Privacy &amp; Security &gt; Open Anyway.</td></tr>
   </table>
 
   <h2>6 · Có gì trong bộ này</h2>
   <pre><code>HANDBOOK.template.md   Sổ tay AI (điền của bạn)
 PRINCIPLES.md          Thư viện nguyên tắc-vàng MẪU (chép vào sổ tay)
 Memories/              Tủ ký ức: mục lục tổng + các nhóm + ví dụ
-.obsidian/             Cấu hình sẵn để mở bằng Obsidian (xem sơ đồ)
 tools/                 các công cụ (in mục lục · bác sĩ · bảng tiến độ · sổ năng lực · tạo mảnh · 4 hook · snapshot)
 templates/             mẫu mảnh · mục lục nhóm · CLAUDE.md · tien-do (bảng tiến độ) · BACKLOG (đa-phiên)
 docs/                  methodology (triết lý) · setup-guide (chi tiết) · multi-session · hoc-cheo-tu-bao-tri · giao-thuc-lam-viec-ai
-nut-bam/               🖱️ NÚT NHẤP ĐÚP (.command Mac / .bat Win): khám tủ · nâng cấp · đóng góp
 NANG-CAP.md            hướng dẫn NÂNG CẤP cho người đã cài bản cũ
 CONTRIBUTING.md        cách GÓP NGƯỢC cái hay về cho cả nhóm
 README.md              tóm tắt

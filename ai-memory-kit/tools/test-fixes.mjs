@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// ✅ TỰ KIỂM (assert-based, không framework) — chốt 2 fix P1 từ audit:
+// ✅ TỰ KIỂM (assert-based, không framework) — chốt fix từ audit:
 //   Fix A: parse frontmatter CRLF-tolerant (build-index/memory-doctor/tien-do/doi-soat/moi-so-nang-luc/build-catalog/so-nang-luc).
 //   Fix B: SECRET_RE mở rộng (memory-doctor.mjs + dong-gop.mjs) — vẫn ĐỒNG BỘ 2 file.
+//   Fix P2-a: khoa-vault.mjs lock (fail-open, stale-break, SIGINT/SIGTERM nhả khoá chống orphan).
+//   Fix P2-b: handbook-gate.mjs cache TTL-free (không đọc lại full transcript mỗi Edit).
 // Dùng: node tools/test-fixes.mjs   → in OK/FAIL từng case, exit 1 nếu có FAIL.
 // Giá trị test dưới đây là chuỗi GIẢ (obviously-fake), chỉ vừa đủ dài để vượt ngưỡng regex — không phải secret thật.
 
@@ -9,7 +11,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, spawn } from 'node:child_process';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 let fails = 0;
@@ -103,6 +105,21 @@ check('2 file SECRET_RE dong bo (cung source pattern, khac cu phap whitespace-cl
   writeFileSync(join(lockPath, 'info.json'), JSON.stringify({ pid: 1, ts: Date.now(), host: 'other' }), 'utf8');
   const got3 = acquireLock(lockRoot, { retries: 0, staleMs: 10 * 60 * 1000 });
   check('khoa-vault fail-open: het retry van tra true', got3 === true);
+  releaseLock(lockRoot);
+
+  // SIGINT nha khoa: child giu lock + sleep, gui SIGINT, cho exit, khoa phai bien mat (khong orphan)
+  const childSrc = `
+    import { acquireLock } from ${JSON.stringify(join(HERE, 'khoa-vault.mjs'))};
+    acquireLock(${JSON.stringify(lockRoot)});
+    setTimeout(() => {}, 30000);
+  `;
+  const child = spawn(process.execPath, ['--input-type=module', '-e', childSrc]);
+  await new Promise((resolve) => setTimeout(resolve, 500)); // cho child chiem lock xong
+  check('khoa-vault SIGINT-test: lock dir da tao truoc khi kill', existsSync(lockPath));
+  const exited = new Promise((resolve) => child.once('exit', resolve));
+  child.kill('SIGINT');
+  await exited;
+  check('khoa-vault SIGINT: lock dir bien mat sau khi child nhan SIGINT', !existsSync(lockPath));
 
   rmSync(lockRoot, { recursive: true, force: true });
 }

@@ -21,7 +21,6 @@ NANG-CAP.md              Hướng dẫn NÂNG CẤP cho người đã cài bản
 VERSION                  Số phiên bản kit (để dò bản khi nâng cấp) 🆕
 PRINCIPLES.md            Thư viện NGUYÊN TẮC VÀNG (mẫu) — bê thẳng cái nào đúng vào HANDBOOK
 Memories/                Cây bộ nhớ: MEMORY.md (mục lục tổng) + các nhóm + ví dụ
-.obsidian/               Cấu hình sẵn để mở kho bằng Obsidian xem graph (tùy chọn)
 tools/                   engine (Node) + hook + snapshot:
   build-index.mjs          in lại INDEX nhóm từ frontmatter (SSOT)
   build-catalog.mjs        in MỤC-LỤC PHẲNG toàn tủ (tra 2 bước · canonical lên đầu) 🆕
