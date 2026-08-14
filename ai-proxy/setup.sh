@@ -18,10 +18,10 @@ command -v curl >/dev/null 2>&1 || { echo "❌ 'curl' required."; exit 1; }
 mkdir -p "$PROFILES" "$HOOKS"
 
 # 1. tool + hook (always refreshed — no secrets inside)
-cp "$SRC/ccswitch.sh"        "$CLAUDE_DIR/ccswitch.sh"
+ln -sfn "$SRC/ccswitch.sh" "$CLAUDE_DIR/ccswitch.sh"
 cp "$SRC/hooks/check-router.sh" "$HOOKS/check-router.sh"
-chmod +x "$CLAUDE_DIR/ccswitch.sh" "$HOOKS/check-router.sh"
-echo "  ✓ ccswitch.sh + hooks/check-router.sh"
+chmod +x "$SRC/ccswitch.sh" "$HOOKS/check-router.sh"
+echo "  ✓ ccswitch.sh linked + hooks/check-router.sh"
 printf '%s\n' "$(dirname "$SRC")" > "$CLAUDE_DIR/.ccswitch-repo"
 echo "  ✓ repo path recorded (ccswitch install)"
 cp "$SRC/statusline-context.sh" "$CLAUDE_DIR/statusline-context.sh"
